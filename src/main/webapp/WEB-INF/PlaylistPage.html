@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${'Playlist: ' + playlist.name}">Playlist</title>
+</head>
+<body>
+    <div>
+        <h1 th:text="${'Playlist: ' + playlist.name}">Playlist</h1>
+        <a th:href="@{/Home}">← Back to Home</a>
+    </div>
+    
+    <p>Created on: <span th:text="${#dates.format(playlist.creationDate, 'dd-MM-yyyy')}"></span></p>
+    
+    <!-- Songs Display Section -->
+    <div>
+        <h2>Songs in this Playlist</h2>
+        
+        <!-- Navigation buttons -->
+        <div th:if="${totalPages > 1}">
+            <a th:if="${hasPrevious}" 
+               th:href="@{/PlaylistPage(playlistId=${playlist.ID}, page=${currentPage - 1})}">
+               ← PREVIOUS
+            </a>
+            
+            <span th:text="${'Page ' + (currentPage + 1) + ' of ' + totalPages}"></span>
+            
+            <a th:if="${hasNext}" 
+               th:href="@{/PlaylistPage(playlistId=${playlist.ID}, page=${currentPage + 1})}">
+               NEXT →
+            </a>
+        </div>
+        
+        <!-- Songs table -->
+        <table th:if="${not #lists.isEmpty(currentPageSongs)}">
+            <tr>
+                <!-- Display up to 5 songs in a single row -->
+                <td th:each="song : ${currentPageSongs}">
+                    <div>
+                        <a th:href="@{/Player(songName=${song.name})}" th:text="${song.name}"></a>
+                    </div>
+                    
+                    <div>
+                        <img th:if="${song.albumCoverPath != null and !song.albumCoverPath.isEmpty()}"
+                             th:src="@{${song.albumCoverPath}}"
+                             th:alt="${'Cover of ' + song.albumName}">
+                        <div th:unless="${song.albumCoverPath != null and !song.albumCoverPath.isEmpty()}">
+                            No Cover
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div th:text="${song.albumName}"></div>
+                        <div th:text="${song.artistName}"></div>
+                        <div th:text="${song.albumReleaseYear}"></div>
+                    </div>
+                </td>
+                
+                <!-- Fill empty cells if less than 5 songs -->
+                <td th:each="i : ${#numbers.sequence(#lists.size(currentPageSongs) + 1, 5)}">
+                    <!-- Empty cell -->
+                </td>
+            </tr>
+        </table>
+        
+        <p th:if="${#lists.isEmpty(currentPageSongs)}">This playlist is empty.</p>
+        
+        <!-- Navigation buttons (repeated at bottom if needed) -->
+        <div th:if="${totalPages > 1}">
+            <a th:if="${hasPrevious}" 
+               th:href="@{/PlaylistPage(playlistId=${playlist.ID}, page=${currentPage - 1})}">
+               ← PREVIOUS
+            </a>
+            
+            <span th:text="${'Page ' + (currentPage + 1) + ' of ' + totalPages}"></span>
+            
+            <a th:if="${hasNext}" 
+               th:href="@{/PlaylistPage(playlistId=${playlist.ID}, page=${currentPage + 1})}">
+               NEXT →
+            </a>
+        </div>
+    </div>
+    
+    <!-- Add Songs to Playlist Section -->
+    <div th:if="${not #lists.isEmpty(availableSongs)}">
+        <h2>Add Songs to Playlist</h2>
+        <form th:action="@{/AddSongsToPlaylist}" method="POST">
+            <input type="hidden" name="playlistId" th:value="${playlist.ID}">
+            
+            <div>
+                <label for="selectedSongs">Select songs to add:</label>
+                <select id="selectedSongs" name="selectedSongs" multiple size="10">
+                    <option th:each="song : ${availableSongs}" 
+                            th:value="${song.name}" 
+                            th:text="${song.name + ' - ' + song.artistName + ' (' + song.albumName + ', ' + song.albumReleaseYear + ')'}">
+                    </option>
+                </select>
+                <small>Hold Ctrl (Cmd on Mac) to select multiple songs</small>
+            </div>
+            
+            <button type="submit">Add Selected Songs</button>
+        </form>
+    </div>
+    
+    <div th:if="${#lists.isEmpty(availableSongs)}">
+        <h2>Add Songs to Playlist</h2>
+        <p>All your songs are already in this playlist!</p>
+    </div>
+</body>
+</html>
