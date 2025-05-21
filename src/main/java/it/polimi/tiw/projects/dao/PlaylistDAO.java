@@ -65,6 +65,7 @@ public class PlaylistDAO {
                 connection.setAutoCommit(originalAutoCommit);
             } catch (SQLException e) {
                 // Log error
+            	//TODO gestire questi errori
                 e.printStackTrace();
             }
         }

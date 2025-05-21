@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title th:text="${'Playlist: ' + playlist.name}">Playlist</title>
+    <link rel="stylesheet" type="text/css" th:href="@{/css/PlaylistPage.css}">
 </head>
 <body>
     <div>
@@ -19,14 +20,14 @@
         <!-- Navigation buttons -->
         <div th:if="${totalPages > 1}">
             <a th:if="${hasPrevious}" 
-               th:href="@{/PlaylistPage(playlistId=${playlist.ID}, page=${currentPage - 1})}">
+               th:href="@{/GoToPlaylistPage(playlistId=${playlist.ID}, page=${currentPage - 1})}">
                ← PREVIOUS
             </a>
             
-            <span th:text="${'Page ' + (currentPage + 1) + ' of ' + totalPages}"></span>
+            <span th:with="pageNum=${currentPage + 1}" th:text="${'Page ' + pageNum + ' of ' + totalPages}"></span>
             
             <a th:if="${hasNext}" 
-               th:href="@{/PlaylistPage(playlistId=${playlist.ID}, page=${currentPage + 1})}">
+               th:href="@{/GoToPlaylistPage(playlistId=${playlist.ID}, page=${currentPage + 1})}">
                NEXT →
             </a>
         </div>
@@ -42,7 +43,8 @@
                     
                     <div>
                         <img th:if="${song.albumCoverPath != null and !song.albumCoverPath.isEmpty()}"
-                             th:src="@{${song.albumCoverPath}}"
+                             class="album-cover"
+                             th:src="@{'/GetImage' + ${song.albumCoverPath}}"
                              th:alt="${'Cover of ' + song.albumName}">
                         <div th:unless="${song.albumCoverPath != null and !song.albumCoverPath.isEmpty()}">
                             No Cover
@@ -68,14 +70,14 @@
         <!-- Navigation buttons (repeated at bottom if needed) -->
         <div th:if="${totalPages > 1}">
             <a th:if="${hasPrevious}" 
-               th:href="@{/PlaylistPage(playlistId=${playlist.ID}, page=${currentPage - 1})}">
+               th:href="@{/GoToPlaylistPage(playlistId=${playlist.ID}, page=${currentPage - 1})}">
                ← PREVIOUS
             </a>
             
-            <span th:text="${'Page ' + (currentPage + 1) + ' of ' + totalPages}"></span>
+            <span th:with="pageNum=${currentPage + 1}" th:text="${'Page ' + pageNum + ' of ' + totalPages}"></span>
             
             <a th:if="${hasNext}" 
-               th:href="@{/PlaylistPage(playlistId=${playlist.ID}, page=${currentPage + 1})}">
+               th:href="@{/GoToPlaylistPage(playlistId=${playlist.ID}, page=${currentPage + 1})}">
                NEXT →
             </a>
         </div>

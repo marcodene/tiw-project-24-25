@@ -1,6 +1,7 @@
 package it.polimi.tiw.projects.controllers;
 
 import jakarta.servlet.ServletException;
+import jakarta.servlet.UnavailableException;
 import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -25,6 +26,7 @@ import it.polimi.tiw.projects.beans.User;
 import it.polimi.tiw.projects.dao.GenreDAO;
 import it.polimi.tiw.projects.dao.SongDAO;
 import it.polimi.tiw.projects.utils.ConnectionHandler;
+import it.polimi.tiw.projects.utils.FileStorageManager;
 
 @MultipartConfig
 @WebServlet("/UploadSong")
@@ -41,6 +43,13 @@ public class UploadSong extends HttpServlet {
     
     public void init() throws ServletException {
     	connection = ConnectionHandler.getConnection(getServletContext());
+    	
+    	// Inizializza il file storage manager
+        try {
+            FileStorageManager.initialize(getServletContext());
+        } catch (UnavailableException e) {
+            throw new ServletException("Failed to initialize file storage: " + e.getMessage(), e);
+        }
     }
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -155,18 +164,27 @@ public class UploadSong extends HttpServlet {
 	
 	// Method to save a file on filesystem
 	private String saveFile(Part filePart, String subdirectory, String fileName) throws IOException {
-		String uploadPath = getServletContext().getRealPath("/WEB-INF/uploads/" + subdirectory);
-		
-		File uploadDir = new File(uploadPath);
-		if (!uploadDir.exists()) {
-            uploadDir.mkdirs();
+		String uploadPath;
+        String relativePath;
+        
+        if ("covers".equals(subdirectory)) {
+            uploadPath = FileStorageManager.getCoverImagesPath();
+            relativePath = FileStorageManager.getRelativeCoverPath(fileName);
+        } else { // songs
+            uploadPath = FileStorageManager.getAudioFilesPath();
+            relativePath = FileStorageManager.getRelativeAudioPath(fileName);
         }
-		
-		String filePath = uploadPath + File.separator + fileName;
-		filePart.write(filePath);
-		
-		// Return a relative path to be saved in the database
-        return "/uploads/" + subdirectory + "/" + fileName;
+        
+        // Percorso completo del file
+        String filePath = uploadPath + File.separator + fileName;
+        
+        // Salva il file
+        filePart.write(filePath);
+        
+        System.out.println("Saved file to: " + filePath);
+        
+        // Ritorna il percorso relativo per l'accesso web
+        return relativePath;
 	}
 
 }

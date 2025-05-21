@@ -1,0 +1,6 @@
+@charset "UTF-8";
+
+.album-cover {
+    max-width: 150px;
+    height: auto;
+}
