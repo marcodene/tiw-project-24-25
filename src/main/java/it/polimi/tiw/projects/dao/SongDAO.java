@@ -119,4 +119,34 @@ public class SongDAO {
 	        }
 	    }
 	}
+	
+
+	public Song getSongByNameAndUser(String songName, int userID) throws SQLException {
+	    String query = "SELECT s.*, g.name as genreName FROM Song s " +
+	                  "JOIN Genre g ON s.genreID = g.ID " +
+	                  "WHERE s.name = ? AND s.userID = ?";
+	    
+	    try (PreparedStatement pstatement = connection.prepareStatement(query)) {
+	        pstatement.setString(1, songName);
+	        pstatement.setInt(2, userID);
+	        
+	        try (ResultSet result = pstatement.executeQuery()) {
+	            if (result.next()) {
+	                Song song = new Song();
+	                song.setUserID(result.getInt("userID"));
+	                song.setName(result.getString("name"));
+	                song.setAlbumName(result.getString("albumName"));
+	                song.setArtistName(result.getString("albumArtist"));
+	                song.setAlbumReleaseYear(result.getInt("albumReleaseYear"));
+	                song.setGenre(result.getString("genreName"));
+	                song.setAlbumCoverPath(result.getString("albumCover"));
+	                song.setAudioFilePath(result.getString("file"));
+	                
+	                return song;
+	            } else {
+	                return null; // Song not found
+	            }
+	        }
+	    }
+	}
 }

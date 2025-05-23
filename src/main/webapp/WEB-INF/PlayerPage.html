@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${'Now Playing: ' + song.name}">Music Player</title>
+    <link rel="stylesheet" type="text/css" th:href="@{/css/PlayerPage.css}">
+</head>
+<body>
+    <div class="player-container">
+        <div class="navigation">
+            <!-- If we know which playlist we came from, go back to that playlist -->
+            <a th:if="${playlistId != null}" 
+               th:href="@{/GoToPlaylistPage(playlistId=${playlistId})}" 
+               class="back-link">← Back to Playlist</a>
+            
+            <!-- Otherwise, go back to home -->
+            <a th:unless="${playlistId != null}" 
+               th:href="@{/Home}" 
+               class="back-link">← Back to Home</a>
+        </div>
+
+        <div class="song-header">
+            <!-- Album Cover -->
+            <div th:if="${song.albumCoverPath != null and !song.albumCoverPath.isEmpty()}">
+                <img class="album-cover"
+                     th:src="@{'/GetImage' + ${song.albumCoverPath}}"
+                     th:alt="${'Cover of ' + song.albumName}">
+            </div>
+            <div th:unless="${song.albumCoverPath != null and !song.albumCoverPath.isEmpty()}" class="no-cover">
+                No Album Cover
+            </div>
+            
+            <!-- Song Information -->
+            <div class="song-info">
+                <div class="song-title" th:text="${song.name}">Song Title</div>
+                <div class="song-details">
+                    <strong>Artist:</strong> <span th:text="${song.artistName}">Artist Name</span>
+                </div>
+                <div class="song-details">
+                    <strong>Album:</strong> <span th:text="${song.albumName}">Album Name</span>
+                </div>
+                <div class="song-details">
+                    <strong>Year:</strong> <span th:text="${song.albumReleaseYear}">2023</span>
+                </div>
+                <div class="song-details">
+                    <strong>Genre:</strong> <span th:text="${song.genre}">Rock</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Audio Player -->
+        <div class="audio-player-container">
+            <h3>Play Song</h3>
+            <audio th:if="${song.audioFilePath != null and !song.audioFilePath.isEmpty()}" 
+                   class="audio-player" 
+                   controls>
+                <source th:src="@{'/GetAudio' + ${song.audioFilePath}}" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+            <p th:unless="${song.audioFilePath != null and !song.audioFilePath.isEmpty()}">
+                No audio file available for this song.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

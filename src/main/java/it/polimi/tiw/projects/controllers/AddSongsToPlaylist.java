@@ -62,7 +62,7 @@ public class AddSongsToPlaylist extends HttpServlet {
             if (selectedSongNames == null || selectedSongNames.length == 0) {
                 // No songs selected, redirect back to playlist page
                 String playlistPagePath = getServletContext().getContextPath() + 
-                    "/PlaylistPage?playlistId=" + playlistId;
+                    "/GoToPlaylistPage?playlistId=" + playlistId;
                 response.sendRedirect(playlistPagePath);
                 return;
             }
@@ -122,7 +122,7 @@ public class AddSongsToPlaylist extends HttpServlet {
         
         // Redirect back to playlist page (first page to see the updated playlist)
         String playlistPagePath = getServletContext().getContextPath() + 
-            "/PlaylistPage?playlistId=" + playlistId;
+            "/GoToPlaylistPage?playlistId=" + playlistId;
         response.sendRedirect(playlistPagePath);
 	}
 	

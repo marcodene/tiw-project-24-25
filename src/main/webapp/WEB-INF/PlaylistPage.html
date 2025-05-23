@@ -38,7 +38,7 @@
                 <!-- Display up to 5 songs in a single row -->
                 <td th:each="song : ${currentPageSongs}">
                     <div>
-                        <a th:href="@{/Player(songName=${song.name})}" th:text="${song.name}"></a>
+                        <a th:href="@{/GoToPlayerPage(playlistId=${playlist.ID}, songName=${song.name})}" th:text="${song.name}"></a>
                     </div>
                     
                     <div>

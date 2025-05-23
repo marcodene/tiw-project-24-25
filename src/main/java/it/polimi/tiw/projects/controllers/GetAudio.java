@@ -11,16 +11,15 @@ import jakarta.servlet.http.HttpSession;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.io.OutputStream;
 
 import it.polimi.tiw.projects.utils.FileStorageManager;
 
-import java.io.OutputStream;
-
-@WebServlet("/GetImage/*")
-public class GetImage extends HttpServlet {
+@WebServlet("/GetAudio/*")
+public class GetAudio extends HttpServlet {
 	private static final long serialVersionUID = 1L;
-    
-    public GetImage() {
+
+    public GetAudio() {
         super();
     }
     
@@ -34,21 +33,21 @@ public class GetImage extends HttpServlet {
     }
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// Controlla se l'utente è autenticato
+		// Check if user is authenticated
         HttpSession session = request.getSession();
         if (session.isNew() || session.getAttribute("user") == null) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Non autorizzato");
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Not authorized");
             return;
         }
         
-        // Estrae il percorso dell'immagine dalla richiesta
+        // Extract the audio file path from the request
         String pathInfo = request.getPathInfo();
         if (pathInfo == null || pathInfo.isEmpty() || pathInfo.equals("/")) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Percorso immagine mancante");
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing audio file path");
             return;
         }
         
-        // Rimuove "/" iniziale se presente
+        // Remove leading "/" if present
         if (pathInfo.startsWith("/")) {
             pathInfo = pathInfo.substring(1);
         }
@@ -56,35 +55,36 @@ public class GetImage extends HttpServlet {
         // Get storage root path
         String storageRoot = FileStorageManager.getBaseStoragePath();
         
-        // Costruisce il percorso completo
-        String imagePath = storageRoot + File.separator + pathInfo;
+        // Build the complete path
+        String audioPath = storageRoot + File.separator + pathInfo;
         
-        // Verifica l'esistenza del file
-        File imageFile = new File(imagePath);
-        if (!imageFile.exists() || !imageFile.isFile()) {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Immagine non trovata");
+        // Check if file exists
+        File audioFile = new File(audioPath);
+        if (!audioFile.exists() || !audioFile.isFile()) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Audio file not found");
             return;
         }
         
-        // Verifica che il file sia all'interno della cartella uploads (sicurezza)
-        if (!imagePath.startsWith(storageRoot)) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Accesso negato");
+        // Security check - verify the file is within the uploads folder
+        if (!audioPath.startsWith(storageRoot)) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access denied");
             return;
         }
         
-        // Determina il content type
-        String contentType = getServletContext().getMimeType(imagePath);
+        // Determine content type
+        String contentType = getServletContext().getMimeType(audioPath);
         if (contentType == null) {
-            contentType = "application/octet-stream";
+            // Default to generic audio type if MIME type can't be determined
+            contentType = "audio/mpeg";
         }
         
-        // Imposta gli header della risposta
+        // Set response headers
         response.setContentType(contentType);
-        response.setContentLength((int) imageFile.length());
+        response.setContentLength((int) audioFile.length());
         
-        // Invia il file al client
+        // Send the file to client
         try (OutputStream out = response.getOutputStream()) {
-            Files.copy(imageFile.toPath(), out);
+            Files.copy(audioFile.toPath(), out);
         }
 	}
 
