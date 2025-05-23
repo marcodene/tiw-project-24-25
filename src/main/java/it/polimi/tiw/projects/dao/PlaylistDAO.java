@@ -124,7 +124,7 @@ public class PlaylistDAO {
 	}
 
 	public List<Playlist> getAllPlaylistsByUserId(int userID) throws SQLException {
-		String query = "SELECT * FROM Playlist WHERE userID = ?";
+		String query = "SELECT * FROM Playlist WHERE userID = ? ORDER BY creationDate DESC;";
 	    List<Playlist> playlists = new ArrayList<>();
 	    
 	    try (PreparedStatement pstatement = connection.prepareStatement(query)) {
