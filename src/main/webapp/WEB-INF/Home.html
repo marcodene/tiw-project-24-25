@@ -2,109 +2,127 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Music Playlist - Home</title>
+    <link rel="stylesheet" type="text/css" th:href="@{/css/style.css}">
 </head>
 <body>
-    <div>
-        <h1>Welcome to your Music Playlist</h1>
-        <a th:href="@{/Logout}">Logout</a>
-    </div>
-    
-    <p th:text="${'Hello, ' + session.user.name + ' ' + session.user.surname + ' (' + session.user.username + ')'}"></p>
-    
-    <!-- Playlists List Section -->
-    <div>
-        <h2>Your Playlists</h2>
-        <table th:if="${not #lists.isEmpty(playlists)}">
-            <thead>
-                <tr>
-                    <th>Playlist Title</th>
-                    <th>Creation Date</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr th:each="playlist : ${playlists}">
-                    <td>
-                        <a th:href="@{/GoToPlaylistPage(playlistId=${playlist.ID})}" th:text="${playlist.name}"></a>
-                    </td>
-                    <td th:text="${#dates.format(playlist.creationDate, 'dd-MM-yyyy')}"></td>
-                    <td>
-                        <a th:if="${jsVersion}" th:href="@{#}" th:onclick="'openReorderModal(' + ${playlist.ID} + ');'">Reorder</a>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-        <p th:if="${#lists.isEmpty(playlists)}">You don't have any playlists yet. Create one below!</p>
-    </div>
-    
-    <!-- Upload Song Form Section -->
-    <div>
-        <h2>Upload a New Song</h2>
-        <form th:action="@{/UploadSong}" method="POST" enctype="multipart/form-data">
-            <div>
-                <label for="songName">Song Title:</label>
-                <input type="text" id="songName" name="songName" required>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <h1>Music Playlist</h1>
             </div>
-            
-            <div>
-                <label for="albumName">Album Title:</label>
-                <input type="text" id="albumName" name="albumName" required>
+            <div class="user-nav">
+                <p th:text="${'Hello, ' + session.user.name + ' ' + session.user.surname}"></p>
+                <a th:href="@{/Logout}" class="logout-btn">Logout</a>
             </div>
-            
-            <div>
-                <label for="artistName">Artist/Group Name:</label>
-                <input type="text" id="artistName" name="artistName" required>
+        </header>
+        
+        <!-- Playlists List Section -->
+        <section class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Your Playlists</h2>
+                </div>
+                
+                <div class="playlist-grid" th:if="${not #lists.isEmpty(playlists)}">
+                    <div class="playlist-card" th:each="playlist : ${playlists}">
+                        <div class="playlist-title">
+                            <a th:href="@{/GoToPlaylistPage(playlistId=${playlist.ID})}" th:text="${playlist.name}"></a>
+                        </div>
+                        <div class="playlist-date" th:text="${#dates.format(playlist.creationDate, 'dd-MM-yyyy')}"></div>
+                        <div th:if="${jsVersion}" class="playlist-actions">
+                            <a th:href="@{#}" th:onclick="'openReorderModal(' + ${playlist.ID} + ');'" class="btn-secondary">Reorder</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <p th:if="${#lists.isEmpty(playlists)}">You don't have any playlists yet. Create one below!</p>
             </div>
+        </section>
+        
+        <div class="form-columns">
+            <!-- Upload Song Form Section -->
+            <section class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Upload a New Song</h2>
+                    </div>
+                    
+                    <form th:action="@{/UploadSong}" method="POST" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="songName">Song Title</label>
+                            <input type="text" id="songName" name="songName" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="albumName">Album Title</label>
+                            <input type="text" id="albumName" name="albumName" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="artistName">Artist/Group Name</label>
+                            <input type="text" id="artistName" name="artistName" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="albumReleaseYear">Release Year</label>
+                            <input type="number" id="albumReleaseYear" name="albumReleaseYear" 
+                                min="1600" th:max="${#dates.format(#dates.createNow(), 'yyyy')}" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="genre">Genre</label>
+                            <select id="genre" name="genre" required>
+                                <option value="">Select Genre</option>
+                                <option th:each="genre : ${genres}" th:value="${genre}" th:text="${genre}"></option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="albumCover">Album Cover Image</label>
+                            <input type="file" id="albumCover" name="albumCover" accept="image/*">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="songFile">Music File</label>
+                            <input type="file" id="songFile" name="songFile" accept="audio/*">
+                        </div>
+                        
+                        <button type="submit">Upload Song</button>
+                    </form>
+                </div>
+            </section>
             
-            <div>
-                <label for="albumReleaseYear">Release Year:</label>
-                <input type="number" id="albumReleaseYear" name="albumReleaseYear" min="1600" th:max="${#dates.format(#dates.createNow(), 'yyyy')}" required>
-            </div>
-            
-            <div>
-                <label for="genre">Genre:</label>
-                <select id="genre" name="genre" required>
-                    <option value="">Select Genre</option>
-                    <option th:each="genre : ${genres}" th:value="${genre}" th:text="${genre}"></option>
-                </select>
-            </div>
-            
-            <div>
-                <label for="albumCover">Album Cover Image:</label>
-                <input type="file" id="albumCover" name="albumCover" accept="image/*">
-            </div>
-            
-            <div>
-                <label for="songFile">Music File:</label>
-                <input type="file" id="songFile" name="songFile" accept="audio/*">
-            </div>
-            
-            <button type="submit">Upload Song</button>
-        </form>
-    </div>
-    
-    <!-- Create Playlist Form Section -->
-    <div>
-        <h2>Create a New Playlist</h2>
-        <form th:action="@{/CreatePlaylist}" method="POST">
-            <div>
-                <label for="playlistName">Playlist Title:</label>
-                <input type="text" id="playlistName" name="playlistName" required>
-            </div>
-            
-            <div>
-                <label for="selectedSongs">Select Songs:</label>
-                <select id="selectedSongs" name="selectedSongs" multiple required>
-                    <option th:each="song : ${songs}" 
-                            th:value="${song.name}" 
-                            th:text="${song.name + ' - ' + song.artistName + ' (' + song.albumName + ', ' + song.albumReleaseYear + ')'}">
-                    </option>
-                </select>
-            </div>
-            
-            <button type="submit">Create Playlist</button>
-        </form>
+            <!-- Create Playlist Form Section -->
+            <section class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Create a New Playlist</h2>
+                    </div>
+                    
+                    <form th:action="@{/CreatePlaylist}" method="POST">
+                        <div class="form-group">
+                            <label for="playlistName">Playlist Title</label>
+                            <input type="text" id="playlistName" name="playlistName" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="selectedSongs">Select Songs</label>
+                            <select id="selectedSongs" name="selectedSongs" multiple required>
+                                <option th:each="song : ${songs}" 
+                                        th:value="${song.name}" 
+                                        th:text="${song.name + ' - ' + song.artistName + ' (' + song.albumName + ', ' + song.albumReleaseYear + ')'}">
+                                </option>
+                            </select>
+                            <small>Hold Ctrl (Cmd on Mac) to select multiple songs</small>
+                        </div>
+                        
+                        <button type="submit">Create Playlist</button>
+                    </form>
+                </div>
+            </section>
+        </div>
     </div>
 </body>
 </html>
