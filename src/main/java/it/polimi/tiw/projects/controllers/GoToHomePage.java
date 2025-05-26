@@ -39,7 +39,8 @@ public class GoToHomePage extends HttpServlet {
 
     public void init() throws ServletException {
 		ServletContext servletContext = getServletContext();
-		JakartaServletWebApplication webApplication = JakartaServletWebApplication.buildApplication(servletContext);     WebApplicationTemplateResolver templateResolver = new WebApplicationTemplateResolver(webApplication);
+		JakartaServletWebApplication webApplication = JakartaServletWebApplication.buildApplication(servletContext);     
+		WebApplicationTemplateResolver templateResolver = new WebApplicationTemplateResolver(webApplication);
 		templateResolver.setTemplateMode(TemplateMode.HTML);
 		this.templateEngine = new TemplateEngine();
 		this.templateEngine.setTemplateResolver(templateResolver);
@@ -89,9 +90,39 @@ public class GoToHomePage extends HttpServlet {
     	JakartaServletWebApplication webApplication = JakartaServletWebApplication.buildApplication(getServletContext());
     	WebContext ctx = new WebContext(webApplication.buildExchange(request, response), request.getLocale());
     	
+    	// Aggiungi sempre i dati principali
     	ctx.setVariable("playlists", playlists);
     	ctx.setVariable("genres", genres);
     	ctx.setVariable("songs", songs);
+    	
+    	// Aggiungi eventuali messaggi di errore e valori del form
+    	// Questi attributi saranno presenti solo quando arriviamo da un forward
+    	// dopo un tentativo fallito di upload o creazione playlist
+    	
+    	// Errori del form di upload canzone
+    	if (request.getAttribute("errorMessages") != null) {
+    	    ctx.setVariable("errorMessages", request.getAttribute("errorMessages"));
+    	}
+    	
+    	// Valori del form di upload canzone
+    	if (request.getAttribute("formValues") != null) {
+    	    ctx.setVariable("formValues", request.getAttribute("formValues"));
+    	}
+    	
+    	// Errori del form di creazione playlist
+    	if (request.getAttribute("playlistErrorMessages") != null) {
+    	    ctx.setVariable("playlistErrorMessages", request.getAttribute("playlistErrorMessages"));
+    	}
+    	
+    	// Valori del form di creazione playlist
+    	if (request.getAttribute("playlistFormValues") != null) {
+    	    ctx.setVariable("playlistFormValues", request.getAttribute("playlistFormValues"));
+    	}
+    	
+    	// Messaggio di successo (vale per entrambi i form)
+    	if (request.getAttribute("successMessage") != null) {
+    	    ctx.setVariable("successMessage", request.getAttribute("successMessage"));
+    	}
 		
     	templateEngine.process(path, ctx, response.getWriter());
     }

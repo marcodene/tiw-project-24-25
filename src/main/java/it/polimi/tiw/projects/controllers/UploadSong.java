@@ -14,8 +14,9 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.text.ParseException;
 import java.time.Year;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import org.apache.commons.lang.StringEscapeUtils;
@@ -61,8 +62,13 @@ public class UploadSong extends HttpServlet {
 			return;
 		}
 		
+		// Crea una mappa per i messaggi di errore e valori del form
+		Map<String, String> errorMessages = new HashMap<>();
+		Map<String, String> formValues = new HashMap<>();
+		String successMessage = null;
+		
 		// Get and parse all parameters from request
-		boolean isBadRequest = false;
+		boolean hasErrors = false;
 		String songName = null;
 		String albumName = null;
 		String artistName = null;
@@ -70,86 +76,157 @@ public class UploadSong extends HttpServlet {
 		String genre = null;
 		Part albumCoverPart = null;
         Part songFilePart = null;
+        
 		try {
+			// Validazione del nome della canzone
 			songName = StringEscapeUtils.escapeJava(request.getParameter("songName"));
-			albumName = StringEscapeUtils.escapeJava(request.getParameter("albumName"));
-			artistName = StringEscapeUtils.escapeJava(request.getParameter("artistName"));
-			albumReleaseYear = Integer.parseInt(request.getParameter("albumReleaseYear"));
-			genre = StringEscapeUtils.escapeJava(request.getParameter("genre"));
-			albumCoverPart = request.getPart("albumCover");
-            songFilePart = request.getPart("songFile");
+			formValues.put("songName", songName);
+			if (songName == null || songName.trim().isEmpty()) {
+				errorMessages.put("nameError", "Il titolo della canzone è obbligatorio");
+				hasErrors = true;
+			}
 			
-			/*
-			 * devo controllare che:
-			 * il titolo della canzone non esista già
-			 * l'anno non sia posteriore alla data di oggi
-			 * il genere musicale esista tra quelli presenti nel database
-			 * che le estensioni dei file siano correti, sia immagine che musica
-			 */
-            User user = (User) session.getAttribute("user");
-            Song song = new Song();
+			// Validazione del nome dell'album
+			albumName = StringEscapeUtils.escapeJava(request.getParameter("albumName"));
+			formValues.put("albumName", albumName);
+			if (albumName == null || albumName.trim().isEmpty()) {
+				errorMessages.put("albumError", "Il titolo dell'album è obbligatorio");
+				hasErrors = true;
+			}
+			
+			// Validazione del nome dell'artista
+			artistName = StringEscapeUtils.escapeJava(request.getParameter("artistName"));
+			formValues.put("artistName", artistName);
+			if (artistName == null || artistName.trim().isEmpty()) {
+				errorMessages.put("artistError", "Il nome dell'artista è obbligatorio");
+				hasErrors = true;
+			}
+			
+			// Validazione dell'anno di pubblicazione
+			String yearStr = request.getParameter("albumReleaseYear");
+			if (yearStr == null || yearStr.trim().isEmpty()) {
+				errorMessages.put("yearError", "L'anno di pubblicazione è obbligatorio");
+				hasErrors = true;
+			} else {
+				try {
+					albumReleaseYear = Integer.parseInt(yearStr);
+					formValues.put("albumReleaseYear", String.valueOf(albumReleaseYear));
+					
+					if(albumReleaseYear < MIN_RELEASE_YEAR || albumReleaseYear > MAX_RELEASE_YEAR) {
+						errorMessages.put("yearError", "L'anno di pubblicazione deve essere compreso tra " + 
+								MIN_RELEASE_YEAR + " e " + MAX_RELEASE_YEAR);
+						hasErrors = true;
+					}
+				} catch (NumberFormatException e) {
+					errorMessages.put("yearError", "L'anno di pubblicazione deve essere un numero valido");
+					hasErrors = true;
+				}
+			}
+			
+			// Validazione del genere musicale
+			genre = StringEscapeUtils.escapeJava(request.getParameter("genre"));
+			formValues.put("genre", genre);
+			if (genre == null || genre.trim().isEmpty()) {
+				errorMessages.put("genreError", "Il genere musicale è obbligatorio");
+				hasErrors = true;
+			}
+			
+			// Validazione dei file
+			albumCoverPart = request.getPart("albumCover");
+			if (albumCoverPart == null || albumCoverPart.getSize() <= 0) {
+				errorMessages.put("albumCoverError", "L'immagine di copertina è obbligatoria");
+				hasErrors = true;
+			} else if (!isValidImageFile(albumCoverPart)) {
+				errorMessages.put("albumCoverError", "Il file deve essere un'immagine valida (JPEG, PNG, GIF)");
+				hasErrors = true;
+			}
+			
+            songFilePart = request.getPart("songFile");
+            if (songFilePart == null || songFilePart.getSize() <= 0) {
+				errorMessages.put("songFileError", "Il file audio è obbligatorio");
+				hasErrors = true;
+			} else if (!isValidAudioFile(songFilePart)) {
+				errorMessages.put("songFileError", "Il file deve essere un audio valido (MP3, WAV, OGG)");
+				hasErrors = true;
+			}
+			
+			User user = (User) session.getAttribute("user");
             SongDAO songDAO = new SongDAO(connection);
             GenreDAO genreDAO = new GenreDAO(connection);
             
             try {
-            	
-            	isBadRequest = songDAO.existsSongByNameAndUser(songName, user.getId())
-            			|| albumReleaseYear > MAX_RELEASE_YEAR
-            			|| albumReleaseYear < MIN_RELEASE_YEAR
-            			|| !genreDAO.existsGenreByName(genre);
-            	
-            	
-            	song.setUserID(user.getId());
-            	song.setName(songName);
-            	song.setAlbumName(albumName);
-            	song.setArtistName(artistName);
-            	song.setAlbumReleaseYear(albumReleaseYear);
-            	song.setGenre(genre);
-            			
-            	if(albumCoverPart != null && albumCoverPart.getSize() > 0) {
-            		String albumCoverFileName = getUniqueFileName(albumCoverPart.getSubmittedFileName());
-    				String albumCoverPath = saveFile(albumCoverPart, "covers", albumCoverFileName);
-    				song.setAlbumCoverPath(albumCoverPath);
+            	// Verifica esistenza canzone con stesso nome
+            	if(songDAO.existsSongByNameAndUser(songName, user.getId())) {
+            		errorMessages.put("nameError", "Una canzone con questo nome esiste già");
+            		hasErrors = true;
             	}
             	
-            	if(songFilePart != null && songFilePart.getSize() > 0) {
-            		String songFileName = getUniqueFileName(songFilePart.getSubmittedFileName());
-    				String songFilePath = saveFile(songFilePart, "songs", songFileName);
-    				song.setAudioFilePath(songFilePath);
+            	// Verifica genere musicale valido
+            	if(!genreDAO.existsGenreByName(genre)) {
+            		errorMessages.put("genreError", "Il genere musicale selezionato non è valido");
+            		hasErrors = true;
             	}
-            			
-            	boolean success = songDAO.uploadSong(song);
             	
-            	if (!success) {
-            	    response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, 
-            	    		"The song wasn't uploaded to the database. Please check the values are correct.");
-            	    return;
+            	// Se non ci sono errori, procedi con l'upload
+            	if(!hasErrors) {
+            	    Song song = new Song();
+            	    song.setUserID(user.getId());
+            	    song.setName(songName);
+            	    song.setAlbumName(albumName);
+            	    song.setArtistName(artistName);
+            	    song.setAlbumReleaseYear(albumReleaseYear);
+            	    song.setGenre(genre);
+            			
+            	    if(albumCoverPart != null && albumCoverPart.getSize() > 0) {
+            		    String albumCoverFileName = getUniqueFileName(albumCoverPart.getSubmittedFileName());
+    				    String albumCoverPath = saveFile(albumCoverPart, "covers", albumCoverFileName);
+    				    song.setAlbumCoverPath(albumCoverPath);
+            	    }
+            	
+            	    if(songFilePart != null && songFilePart.getSize() > 0) {
+            		    String songFileName = getUniqueFileName(songFilePart.getSubmittedFileName());
+    				    String songFilePath = saveFile(songFilePart, "songs", songFileName);
+    				    song.setAudioFilePath(songFilePath);
+            	    }
+            			
+            	    boolean success = songDAO.uploadSong(song);
+            	
+            	    if (!success) {
+            		    errorMessages.put("generalError", "Non è stato possibile caricare la canzone. Controlla che i valori siano corretti.");
+            		    hasErrors = true;
+            	    } else {
+            	        // Upload completato con successo
+            	        successMessage = "Canzone '" + songName + "' caricata con successo!";
+            	        // Pulisci i valori del form dopo il successo
+            	        formValues.clear();
+            	    }
             	}
 				
 			} catch (SQLException e) {
-				response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Not possible to upload song");
+				errorMessages.put("generalError", "Errore del database: " + e.getMessage());
+				hasErrors = true;
 				e.printStackTrace();
 			}
             
-			
-			
-		}catch (NumberFormatException | NullPointerException | BadRequestException e) {
-			isBadRequest = true;
+		} catch (Exception e) {
+			errorMessages.put("generalError", "Errore durante l'elaborazione dei dati: " + e.getMessage());
+			hasErrors = true;
 			e.printStackTrace();
 		}
 		
-		if (isBadRequest) {
-			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Incorrect or missing param values");
-			return;
+		// Aggiungiamo gli errori e i valori come attributi della request (non della sessione)
+		if (!errorMessages.isEmpty()) {
+		    request.setAttribute("errorMessages", errorMessages);
+		}
+		if (!formValues.isEmpty()) {
+		    request.setAttribute("formValues", formValues);
+		}
+		if (successMessage != null) {
+		    request.setAttribute("successMessage", successMessage);
 		}
 		
-		
-	
-		String homePagePath = getServletContext().getContextPath() + "/Home";
-		response.sendRedirect(homePagePath);
-		return;
-		
-		
+		// Forward alla servlet GoToHomePage
+		request.getRequestDispatcher("/Home").forward(request, response);
 	}
 
 	// Unique file's name generator
@@ -179,12 +256,58 @@ public class UploadSong extends HttpServlet {
         String filePath = uploadPath + File.separator + fileName;
         
         // Salva il file
-        filePart.write(filePath);
-        
-        System.out.println("Saved file to: " + filePath);
+        try {
+            filePart.write(filePath);
+            System.out.println("Saved file to: " + filePath);
+        } catch (IOException e) {
+            System.err.println("Error saving file: " + e.getMessage());
+            throw new IOException("Impossibile salvare il file. Verifica che il server abbia i permessi di scrittura.", e);
+        }
         
         // Ritorna il percorso relativo per l'accesso web
         return relativePath;
 	}
-
+	
+	// Verify if the file is a valid image file
+	private boolean isValidImageFile(Part filePart) {
+	    String fileName = filePart.getSubmittedFileName().toLowerCase();
+	    String contentType = filePart.getContentType();
+	    
+	    // Check file extension
+	    boolean validExtension = fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") || 
+	                             fileName.endsWith(".png") || fileName.endsWith(".gif");
+	    
+	    // Check MIME type
+	    boolean validMimeType = contentType != null && 
+	                           (contentType.equals("image/jpeg") || 
+	                            contentType.equals("image/png") || 
+	                            contentType.equals("image/gif"));
+	    
+	    return validExtension && validMimeType;
+	}
+	
+	// Verify if the file is a valid audio file
+	private boolean isValidAudioFile(Part filePart) {
+	    String fileName = filePart.getSubmittedFileName().toLowerCase();
+	    String contentType = filePart.getContentType();
+	    
+	    // Check file extension
+	    boolean validExtension = fileName.endsWith(".mp3") || fileName.endsWith(".wav") || 
+	                             fileName.endsWith(".ogg") || fileName.endsWith(".m4a");
+	    
+	    // Check MIME type
+	    boolean validMimeType = contentType != null && 
+	                           (contentType.startsWith("audio/") || 
+	                            contentType.equals("application/ogg"));
+	    
+	    return validExtension && validMimeType;
+	}
+	
+	public void destroy() {
+        try {
+            ConnectionHandler.closeConnection(connection);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }
