@@ -51,7 +51,21 @@ public class CreatePlaylist extends HttpServlet {
 		boolean hasErrors = false;
 		
 		String playlistName = null;
-		String[] selectedSongNames = null;
+		
+		int[] selectedSongIDs = null;
+		String[] selectedSongIDStrings = request.getParameterValues("selectedSongs");
+
+		if (selectedSongIDStrings != null) {
+		    selectedSongIDs = new int[selectedSongIDStrings.length];
+		    try {
+		        for (int i = 0; i < selectedSongIDStrings.length; i++) {
+		            selectedSongIDs[i] = Integer.parseInt(selectedSongIDStrings[i]);
+		        }
+		    } catch (NumberFormatException e) {
+		        errorMessages.put("selectedSongsError", "ID delle canzoni non validi");
+		        hasErrors = true;
+		    }
+		}
 		
 		User user = (User) session.getAttribute("user");
 		SongDAO songDAO = new SongDAO(connection);
@@ -61,25 +75,24 @@ public class CreatePlaylist extends HttpServlet {
 			playlistName = StringEscapeUtils.escapeJava(request.getParameter("playlistName"));
 			formValues.put("playlistName", playlistName);
 			
-			selectedSongNames = request.getParameterValues("selectedSongs");
 			
 			if (playlistName == null || playlistName.isEmpty()) {
 			    errorMessages.put("playlistNameError", "Il nome della playlist è obbligatorio");
 			    hasErrors = true;
 			}
 			
-			if (selectedSongNames == null || selectedSongNames.length == 0) {
+			if (selectedSongIDs == null || selectedSongIDs.length == 0) {
 			    errorMessages.put("selectedSongsError", "Devi selezionare almeno una canzone");
 			    hasErrors = true;
 			}
 			
-			if(containsDuplicates(selectedSongNames)) {
+			if(containsDuplicates(selectedSongIDs)) {
 				errorMessages.put("selectedSongsError", "La playlist non può contenere canzoni duplicate");
 				hasErrors = true;
 			}
 			
 			try {
-			    if(!hasErrors && !songDAO.existAllSongsByNamesAndUser(selectedSongNames, user.getId())) {
+				if(!hasErrors && !songDAO.existAllSongsByIDsAndUser(selectedSongIDs, user.getId())) {
 				    errorMessages.put("selectedSongsError", "Tutte le canzoni devono essere già state caricate");
 				    hasErrors = true;
 			    }
@@ -91,7 +104,7 @@ public class CreatePlaylist extends HttpServlet {
 			    
 			    // Se non ci sono errori, procedi con la creazione
 			    if(!hasErrors) {
-    			    boolean success = playlistDAO.createPlaylist(playlistName, selectedSongNames, user.getId());
+			    	boolean success = playlistDAO.createPlaylist(playlistName, selectedSongIDs, user.getId());
     			
     			    if (!success) {
         	            errorMessages.put("generalError", "La playlist non è stata creata. Verifica che i valori siano corretti.");
@@ -130,25 +143,19 @@ public class CreatePlaylist extends HttpServlet {
 		request.getRequestDispatcher("/Home").forward(request, response);
 	}
 	
-	private boolean containsDuplicates(String[] songNames) {
-	    // If array is null or has less than 2 elements, it can't have duplicates
-	    if (songNames == null || songNames.length < 2) {
+	private boolean containsDuplicates(int[] songIDs) {
+	    if (songIDs == null || songIDs.length < 2) {
 	        return false;
 	    }
 	    
-	    // Use a HashSet to track unique song names
-	    // HashSet garantisce unicità degli elementi
-	    Set<String> uniqueSongs = new HashSet<>();
+	    Set<Integer> uniqueSongs = new HashSet<>();
 	    
-	    // Iterate through all song names
-	    for (String songName : songNames) {
-	        // If this song is already in the set, it's a duplicate
-	        if (!uniqueSongs.add(songName)) {
-	            return true; // Duplicato trovato
+	    for (int songID : songIDs) {
+	        if (!uniqueSongs.add(songID)) {
+	            return true;
 	        }
 	    }
 	    
-	    // No duplicates found
 	    return false;
 	}
 	

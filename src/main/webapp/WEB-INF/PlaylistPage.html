@@ -66,7 +66,7 @@
                                     
                                     <div class="song-info">
                                         <div class="song-title">
-                                            <a th:href="@{/GoToPlayerPage(playlistId=${playlist.ID}, songName=${song.name})}" 
+                                            <a th:href="@{/GoToPlayerPage(playlistId=${playlist.ID}, songID=${song.ID})}" 
                                                th:text="${song.name}"></a>
                                         </div>
                                         <div class="song-meta" th:text="${song.albumName}"></div>
@@ -120,7 +120,7 @@
                         <label for="selectedSongs">Select songs to add:</label>
                         <select id="selectedSongs" name="selectedSongs" multiple size="10">
                             <option th:each="song : ${availableSongs}" 
-                                    th:value="${song.name}" 
+                                    th:value="${song.ID}" 
                                     th:text="${song.name + ' - ' + song.artistName + ' (' + song.albumName + ', ' + song.albumReleaseYear + ')'}">
                             </option>
                         </select>

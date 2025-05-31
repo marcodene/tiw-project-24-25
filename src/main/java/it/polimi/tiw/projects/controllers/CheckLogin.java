@@ -24,7 +24,7 @@ import it.polimi.tiw.projects.dao.UserDAO;
 import it.polimi.tiw.projects.beans.User;
 
 
-@WebServlet("/CheckLogin")
+@WebServlet("/CheckLogin") 
 public class CheckLogin extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	private Connection connection = null;

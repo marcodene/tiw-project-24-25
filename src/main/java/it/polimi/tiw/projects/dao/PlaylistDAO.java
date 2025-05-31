@@ -20,56 +20,37 @@ public class PlaylistDAO {
 		this.connection = connection;
 	}
 	
-	public boolean createPlaylist(String name, String[] songNames, int userID) throws SQLException {
-        // Store the current auto-commit state to restore it later
-        boolean originalAutoCommit = connection.getAutoCommit();
-        
-        try {
-            // Start transaction
-            connection.setAutoCommit(false);
-            
-            // 1. Insert the playlist record
-            int playlistID = insertPlaylist(name, userID);
-            
-            // 2. Get song IDs from song names
-            SongDAO songDAO = new SongDAO(connection);
-            
-            // 3. Add songs to playlist
-            for (String songName : songNames) {
-                int songID = songDAO.getSongIDByNameAndUser(songName, userID);
-                
-                // Skip invalid songs (this shouldn't happen if validation was done properly)
-                if (songID <= 0) {
-                    continue;
-                }
-                
-                // Add song to playlist
-                addSongToPlaylist(playlistID, songID);
-            }
-            
-            // Commit transaction
-            connection.commit();
-            return true;
-        } catch (SQLException e) {
-            // Something went wrong, rollback transaction
-            try {
-                connection.rollback();
-            } catch (SQLException rollbackEx) {
-                // Log rollback error
-                rollbackEx.printStackTrace();
-            }
-            throw e; // Re-throw the original exception
-        } finally {
-            // Restore original auto-commit state
-            try {
-                connection.setAutoCommit(originalAutoCommit);
-            } catch (SQLException e) {
-                // Log error
-            	//TODO gestire questi errori
-                e.printStackTrace();
-            }
-        }
-    }
+	public boolean createPlaylist(String name, int[] songIDs, int userID) throws SQLException {
+	    boolean originalAutoCommit = connection.getAutoCommit();
+	    
+	    try {
+	        connection.setAutoCommit(false);
+	        
+	        // 1. Insert the playlist record
+	        int playlistID = insertPlaylist(name, userID);
+	        
+	        // 2. Add songs to playlist usando direttamente gli ID
+	        for (int songID : songIDs) {
+	            addSongToPlaylist(playlistID, songID);
+	        }
+	        
+	        connection.commit();
+	        return true;
+	    } catch (SQLException e) {
+	        try {
+	            connection.rollback();
+	        } catch (SQLException rollbackEx) {
+	            rollbackEx.printStackTrace();
+	        }
+	        throw e;
+	    } finally {
+	        try {
+	            connection.setAutoCommit(originalAutoCommit);
+	        } catch (SQLException e) {
+	            e.printStackTrace();
+	        }
+	    }
+	}
 	
 	private int insertPlaylist(String name, int userID) throws SQLException {
         String query = "INSERT INTO Playlist (name, creationDate, userID) VALUES (?, ?, ?)";
@@ -191,6 +172,7 @@ public class PlaylistDAO {
 	        try (ResultSet result = pstatement.executeQuery()) {
 	            while (result.next()) {
 	                Song song = new Song();
+	                song.setID(result.getInt("ID"));
 	                song.setUserID(result.getInt("userID"));
 	                song.setName(result.getString("name"));
 	                song.setAlbumName(result.getString("albumName"));
@@ -233,6 +215,7 @@ public class PlaylistDAO {
 	        try (ResultSet result = pstatement.executeQuery()) {
 	            while (result.next()) {
 	                Song song = new Song();
+	                song.setID(result.getInt("ID"));
 	                song.setUserID(result.getInt("userID"));
 	                song.setName(result.getString("name"));
 	                song.setAlbumName(result.getString("albumName"));
@@ -253,21 +236,13 @@ public class PlaylistDAO {
 	/**
 	 * Add songs to existing playlist
 	 */
-	public boolean addSongsToPlaylist(int playlistId, String[] songNames, int userId) throws SQLException {
+	public boolean addSongsToPlaylist(int playlistId, int[] songIDs, int userId) throws SQLException {
 	    boolean originalAutoCommit = connection.getAutoCommit();
 	    
 	    try {
 	        connection.setAutoCommit(false);
 	        
-	        SongDAO songDAO = new SongDAO(connection);
-	        
-	        for (String songName : songNames) {
-	            int songID = songDAO.getSongIDByNameAndUser(songName, userId);
-	            
-	            if (songID <= 0) {
-	                continue; // Skip invalid songs
-	            }
-	            
+	        for (int songID : songIDs) {
 	            // Check if song is already in playlist
 	            if (!isSongInPlaylist(playlistId, songID)) {
 	                addSongToPlaylist(playlistId, songID);

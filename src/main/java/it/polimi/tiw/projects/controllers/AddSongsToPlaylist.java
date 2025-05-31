@@ -46,12 +46,13 @@ public class AddSongsToPlaylist extends HttpServlet {
         
         boolean isBadRequest = false;
         String playlistIdStr = null;
-        String[] selectedSongNames = null;
+        int[] selectedSongIDs = null;
+        String[] selectedSongIDStrings = null;
         int playlistId = -1;
         
         try {
         	playlistIdStr = request.getParameter("playlistId");
-            selectedSongNames = request.getParameterValues("selectedSongs");
+        	selectedSongIDStrings = request.getParameterValues("selectedSongs");
             
             if (playlistIdStr == null || playlistIdStr.isEmpty()) {
                 isBadRequest = true;
@@ -59,7 +60,7 @@ public class AddSongsToPlaylist extends HttpServlet {
                 playlistId = Integer.parseInt(playlistIdStr);
             }
             
-            if (selectedSongNames == null || selectedSongNames.length == 0) {
+            if (selectedSongIDStrings == null || selectedSongIDStrings.length == 0) {
                 // No songs selected, redirect back to playlist page
                 String playlistPagePath = getServletContext().getContextPath() + 
                     "/GoToPlaylistPage?playlistId=" + playlistId;
@@ -67,8 +68,20 @@ public class AddSongsToPlaylist extends HttpServlet {
                 return;
             }
             
+            // Parse degli ID delle canzoni
+            selectedSongIDs = new int[selectedSongIDStrings.length];
+            try {
+                for (int i = 0; i < selectedSongIDStrings.length; i++) {
+                    selectedSongIDs[i] = Integer.parseInt(selectedSongIDStrings[i]);
+                }
+            } catch (NumberFormatException e) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST, 
+                    "Invalid song ID format");
+                return;
+            }
+            
             // Check for duplicates in selected songs
-            if (containsDuplicates(selectedSongNames)) {
+            if (containsDuplicates(selectedSongIDs)) {
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, 
                     "Cannot select the same song multiple times");
                 return;
@@ -82,7 +95,7 @@ public class AddSongsToPlaylist extends HttpServlet {
             }
             
             // Verify all selected songs belong to user
-            if (!songDAO.existAllSongsByNamesAndUser(selectedSongNames, user.getId())) {
+            if (!songDAO.existAllSongsByIDsAndUser(selectedSongIDs, user.getId())) {
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST, 
                     "All selected songs must belong to you");
                 return;
@@ -105,7 +118,7 @@ public class AddSongsToPlaylist extends HttpServlet {
         
         try {
             // Add songs to playlist
-            boolean success = playlistDAO.addSongsToPlaylist(playlistId, selectedSongNames, user.getId());
+        	boolean success = playlistDAO.addSongsToPlaylist(playlistId, selectedSongIDs, user.getId());
             
             if (!success) {
                 response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, 
@@ -126,21 +139,21 @@ public class AddSongsToPlaylist extends HttpServlet {
         response.sendRedirect(playlistPagePath);
 	}
 	
-	private boolean containsDuplicates(String[] songNames) {
-        if (songNames == null || songNames.length < 2) {
-            return false;
-        }
-        
-        Set<String> uniqueSongs = new HashSet<>();
-        
-        for (String songName : songNames) {
-            if (!uniqueSongs.add(songName)) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
+	private boolean containsDuplicates(int[] songIDs) {
+	    if (songIDs == null || songIDs.length < 2) {
+	        return false;
+	    }
+	    
+	    Set<Integer> uniqueSongs = new HashSet<>();
+	    
+	    for (int songID : songIDs) {
+	        if (!uniqueSongs.add(songID)) {
+	            return true;
+	        }
+	    }
+	    
+	    return false;
+	}
     
     public void destroy() {
         try {

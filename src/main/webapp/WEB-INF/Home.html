@@ -168,7 +168,7 @@
                             <select id="selectedSongs" name="selectedSongs" multiple required
                                     th:class="${playlistErrorMessages != null and playlistErrorMessages.containsKey('selectedSongsError') ? 'form-field-error' : ''}">
                                 <option th:each="song : ${songs}" 
-                                        th:value="${song.name}" 
+                                        th:value="${song.ID}" 
                                         th:text="${song.name + ' - ' + song.artistName + ' (' + song.albumName + ', ' + song.albumReleaseYear + ')'}">
                                 </option>
                             </select>

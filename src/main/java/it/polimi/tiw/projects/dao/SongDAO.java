@@ -8,6 +8,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import it.polimi.tiw.projects.beans.Playlist;
 import it.polimi.tiw.projects.beans.Song;
 import it.polimi.tiw.projects.beans.User;
 
@@ -17,7 +18,7 @@ public class SongDAO {
 	public SongDAO (Connection connection) {
 		this.connection = connection;
 	}
-	
+	//TODO da rimuovere perchè ora conotrollo di unicità non lo faccio con il nome, ma guardando tutti i parametri
 	public boolean existsSongByNameAndUser (String name, int userID ) throws SQLException {
 		String query = "SELECT name FROM Song WHERE name=? and userID=?";
 		
@@ -33,6 +34,28 @@ public class SongDAO {
 			}
 		}
 	}
+	
+	public boolean existsSongWithSameData(String name, String albumName, String artistName, int albumReleaseYear, int genreID, int userID) throws SQLException {
+	    String query = "SELECT COUNT(*) FROM Song WHERE name=? AND albumName=? AND albumArtist=? AND albumReleaseYear=? AND genreID=? AND userID=?";
+	    
+	    try (PreparedStatement pstatement = connection.prepareStatement(query)) {
+	        pstatement.setString(1, name);
+	        pstatement.setString(2, albumName);
+	        pstatement.setString(3, artistName);
+	        pstatement.setInt(4, albumReleaseYear);
+	        pstatement.setInt(5, genreID);
+	        pstatement.setInt(6, userID);
+	        
+	        try (ResultSet result = pstatement.executeQuery()) {
+	            if (result.next()) {
+	                return result.getInt(1) > 0;
+	            }
+	        }
+	    }
+	    return false;
+	}
+	
+	
 
 	public boolean uploadSong(Song song) throws SQLException {
 		String query = "INSERT INTO Song (userID, name, genreID, file, albumCover, albumName, albumArtist, albumReleaseYear) " +
@@ -78,6 +101,7 @@ public class SongDAO {
 	        try (ResultSet result = pstatement.executeQuery()) {
 	            while (result.next()) {
 	                Song song = new Song();
+	                song.setID(result.getInt("ID"));
 	                song.setUserID(result.getInt("userID"));
 	                song.setName(result.getString("name"));
 	                song.setAlbumName(result.getString("albumName"));
@@ -95,12 +119,30 @@ public class SongDAO {
 	    return songs;
 	}
 	
+	//TODO da rimuovere perchè ora conotrollo di unicità non lo faccio con il nome, ma guardando tutti i parametri
 	public boolean existAllSongsByNamesAndUser(String[] songNames, int userID) throws SQLException {
 		for (String songName : songNames) {
 		    if(!existsSongByNameAndUser(songName, userID))
 		    	return false;
 		}
 		return true;
+	}
+	
+	public boolean existAllSongsByIDsAndUser(int[] songIDs, int userID) throws SQLException {
+	    for (int songID : songIDs) {
+	        String query = "SELECT COUNT(*) FROM Song WHERE ID = ? AND userID = ?";
+	        try (PreparedStatement pstatement = connection.prepareStatement(query)) {
+	            pstatement.setInt(1, songID);
+	            pstatement.setInt(2, userID);
+	            
+	            try (ResultSet result = pstatement.executeQuery()) {
+	                if (result.next() && result.getInt(1) == 0) {
+	                    return false;
+	                }
+	            }
+	        }
+	    }
+	    return true;
 	}
 	
 	public int getSongIDByNameAndUser(String songName, int userID) throws SQLException {
@@ -120,7 +162,7 @@ public class SongDAO {
 	    }
 	}
 	
-
+	//TODO probailmente andrà rimosso/modificato perchè possono esistere più di una canzone con lo stesso nome
 	public Song getSongByNameAndUser(String songName, int userID) throws SQLException {
 	    String query = "SELECT s.*, g.name as genreName FROM Song s " +
 	                  "JOIN Genre g ON s.genreID = g.ID " +
@@ -133,6 +175,7 @@ public class SongDAO {
 	        try (ResultSet result = pstatement.executeQuery()) {
 	            if (result.next()) {
 	                Song song = new Song();
+	                song.setID(result.getInt("ID"));
 	                song.setUserID(result.getInt("userID"));
 	                song.setName(result.getString("name"));
 	                song.setAlbumName(result.getString("albumName"));
@@ -145,6 +188,34 @@ public class SongDAO {
 	                return song;
 	            } else {
 	                return null; // Song not found
+	            }
+	        }
+	    }
+	}
+	
+	public Song getSongByIDAndUser(int songId, int userId) throws SQLException {
+	    String query = "SELECT s.*, g.name as genreName FROM Song s JOIN Genre g ON s.genreID = g.ID WHERE s.ID = ? AND s.userID = ?";
+	    
+	    try (PreparedStatement pstatement = connection.prepareStatement(query)) {
+	        pstatement.setInt(1, songId);
+	        pstatement.setInt(2, userId);
+	        
+	        try (ResultSet result = pstatement.executeQuery()) {
+	            if (result.next()) {
+	            	Song song = new Song();
+	                song.setID(result.getInt("ID"));
+	                song.setUserID(result.getInt("userID"));
+	                song.setName(result.getString("name"));
+	                song.setAlbumName(result.getString("albumName"));
+	                song.setArtistName(result.getString("albumArtist"));
+	                song.setAlbumReleaseYear(result.getInt("albumReleaseYear"));
+	                song.setGenre(result.getString("genreName"));
+	                song.setAlbumCoverPath(result.getString("albumCover"));
+	                song.setAudioFilePath(result.getString("file"));
+	                
+	                return song;
+	            } else {
+	                return null; // Song not found or doesn't belong to user
 	            }
 	        }
 	    }

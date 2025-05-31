@@ -1,6 +1,7 @@
 package it.polimi.tiw.projects.beans;
 
 public class Song {
+	private int ID;
 	private int userID;
     private String name;
     private String albumName;
@@ -10,6 +11,14 @@ public class Song {
     private String albumCoverPath;
     private String audioFilePath;
     
+    
+    public int getID() {
+        return ID;
+    }
+    
+    public void setID(int ID) {
+        this.ID = ID;
+    }
     
 	public int getUserID() {
 		return userID;

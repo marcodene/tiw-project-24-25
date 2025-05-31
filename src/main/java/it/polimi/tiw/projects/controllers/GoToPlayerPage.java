@@ -54,12 +54,12 @@ public class GoToPlayerPage extends HttpServlet {
     	
     	User user = (User) session.getAttribute("user");
     	
-    	// Get song name from request
-        String songName = request.getParameter("songName");
-        if (songName == null || songName.isEmpty()) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Song name is required");
-            return;
-        }
+//    	// Get song name from request
+//        String songName = request.getParameter("songName");
+//        if (songName == null || songName.isEmpty()) {
+//            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Song name is required");
+//            return;
+//        }
         
         // Get the playlist ID for back navigation
         String playlistId = request.getParameter("playlistId");
@@ -69,7 +69,9 @@ public class GoToPlayerPage extends HttpServlet {
         
         try {
         	// Get song details
-            song = songDAO.getSongByNameAndUser(songName, user.getId());
+        	String songIDStr = request.getParameter("songID");
+        	int songID = Integer.parseInt(songIDStr);
+        	song = songDAO.getSongByIDAndUser(songID, user.getId());
             
             if (song == null) {
                 response.sendError(HttpServletResponse.SC_NOT_FOUND, "Song not found or access denied");

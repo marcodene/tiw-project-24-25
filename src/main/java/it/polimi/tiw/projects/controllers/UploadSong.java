@@ -155,17 +155,23 @@ public class UploadSong extends HttpServlet {
             GenreDAO genreDAO = new GenreDAO(connection);
             
             try {
-            	// Verifica esistenza canzone con stesso nome
-            	if(songDAO.existsSongByNameAndUser(songName, user.getId())) {
-            		errorMessages.put("nameError", "Una canzone con questo nome esiste già");
-            		hasErrors = true;
-            	}
-            	
             	// Verifica genere musicale valido
             	if(!genreDAO.existsGenreByName(genre)) {
             		errorMessages.put("genreError", "Il genere musicale selezionato non è valido");
             		hasErrors = true;
             	}
+            	
+            	int genreId = -1;
+            	if (genre != null && !genre.isEmpty()) {
+            	    genreId = genreDAO.getGenreIdByName(genre);
+            	}
+            	
+            	if(genreId > 0 && songDAO.existsSongWithSameData(songName, albumName, artistName, 
+            	        albumReleaseYear, genreId, user.getId())) {
+            	    errorMessages.put("generalError", "Esiste già una canzone identica con questi dati");
+            	    hasErrors = true;
+            	}
+            	
             	
             	// Se non ci sono errori, procedi con l'upload
             	if(!hasErrors) {
