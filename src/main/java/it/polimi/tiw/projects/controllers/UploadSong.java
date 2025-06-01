@@ -77,6 +77,11 @@ public class UploadSong extends HttpServlet {
 		Part albumCoverPart = null;
         Part songFilePart = null;
         
+        String songFilePath = null;
+	    String albumCoverPath = null;
+	    
+	    boolean dbSuccess = false;
+        
 		try {
 			// Validazione del nome della canzone
 			songName = StringEscapeUtils.escapeJava(request.getParameter("songName"));
@@ -136,6 +141,9 @@ public class UploadSong extends HttpServlet {
 			if (albumCoverPart == null || albumCoverPart.getSize() <= 0) {
 				errorMessages.put("albumCoverError", "L'immagine di copertina è obbligatoria");
 				hasErrors = true;
+			}else if(albumCoverPart != null && albumCoverPart.getSize() > 5 * 1024 * 1024) {
+				errorMessages.put("albumCoverError", "L'immagine di copertina non può superare i 5MB");
+		        hasErrors = true;
 			} else if (!isValidImageFile(albumCoverPart)) {
 				errorMessages.put("albumCoverError", "Il file deve essere un'immagine valida (JPEG, PNG, GIF)");
 				hasErrors = true;
@@ -145,6 +153,9 @@ public class UploadSong extends HttpServlet {
             if (songFilePart == null || songFilePart.getSize() <= 0) {
 				errorMessages.put("songFileError", "Il file audio è obbligatorio");
 				hasErrors = true;
+            }else if(songFilePart != null && songFilePart.getSize() > 10 * 1024 * 1024) {
+				errorMessages.put("songFileError", "Il file audio non può superare i 10MB");
+		        hasErrors = true;
 			} else if (!isValidAudioFile(songFilePart)) {
 				errorMessages.put("songFileError", "Il file deve essere un audio valido (MP3, WAV, OGG)");
 				hasErrors = true;
@@ -185,19 +196,20 @@ public class UploadSong extends HttpServlet {
             			
             	    if(albumCoverPart != null && albumCoverPart.getSize() > 0) {
             		    String albumCoverFileName = getUniqueFileName(albumCoverPart.getSubmittedFileName());
-    				    String albumCoverPath = saveFile(albumCoverPart, "covers", albumCoverFileName);
+    				    albumCoverPath = saveFile(albumCoverPart, "covers", albumCoverFileName);
     				    song.setAlbumCoverPath(albumCoverPath);
             	    }
             	
             	    if(songFilePart != null && songFilePart.getSize() > 0) {
             		    String songFileName = getUniqueFileName(songFilePart.getSubmittedFileName());
-    				    String songFilePath = saveFile(songFilePart, "songs", songFileName);
+    				    songFilePath = saveFile(songFilePart, "songs", songFileName);
     				    song.setAudioFilePath(songFilePath);
             	    }
             			
             	    boolean success = songDAO.uploadSong(song);
             	
             	    if (!success) {
+            	    	deleteUploadedFiles(albumCoverPath, songFilePath);
             		    errorMessages.put("generalError", "Non è stato possibile caricare la canzone. Controlla che i valori siano corretti.");
             		    hasErrors = true;
             	    } else {
@@ -209,12 +221,14 @@ public class UploadSong extends HttpServlet {
             	}
 				
 			} catch (SQLException e) {
+				deleteUploadedFiles(albumCoverPath, songFilePath);
 				errorMessages.put("generalError", "Errore del database: " + e.getMessage());
 				hasErrors = true;
 				e.printStackTrace();
 			}
             
 		} catch (Exception e) {
+			deleteUploadedFiles(albumCoverPath, songFilePath);
 			errorMessages.put("generalError", "Errore durante l'elaborazione dei dati: " + e.getMessage());
 			hasErrors = true;
 			e.printStackTrace();
@@ -316,4 +330,28 @@ public class UploadSong extends HttpServlet {
             e.printStackTrace();
         }
     }
+	
+	private void deleteUploadedFiles(String coverPath, String audioPath) {
+	    if (coverPath != null) {
+	        try {
+	            File coverFile = new File(FileStorageManager.getBaseStoragePath() + coverPath);
+	            if (coverFile.exists()) {
+	                coverFile.delete();
+	            }
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        }
+	    }
+	    
+	    if (audioPath != null) {
+	        try {
+	            File audioFile = new File(FileStorageManager.getBaseStoragePath() + audioPath);
+	            if (audioFile.exists()) {
+	                audioFile.delete();
+	            }
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        }
+	    }
+	}
 }

@@ -26,17 +26,29 @@ public class PlaylistDAO {
 	    try {
 	        connection.setAutoCommit(false);
 	        
-	        // 1. Insert the playlist record
+	        if (existsPlaylistByNameAndUser(name, userID)) {
+	            throw new SQLException("Playlist with name '" + name + "' already exists");
+	        }
+	        
+	        // Insert the playlist record
 	        int playlistID = insertPlaylist(name, userID);
 	        
-	        // 2. Add songs to playlist usando direttamente gli ID
+	        // Verifica che tutti i songID appartengano all'utente
+	        SongDAO songDAO = new SongDAO(connection);
+	        for (int songID : songIDs) {
+	            if (!songDAO.songBelongsToUser(songID, userID)) {
+	                throw new SQLException("Song ID " + songID + " does not belong to user");
+	            }
+	        }
+	        
+	        // Add songs to playlist usando direttamente gli ID
 	        for (int songID : songIDs) {
 	            addSongToPlaylist(playlistID, songID);
 	        }
 	        
 	        connection.commit();
 	        return true;
-	    } catch (SQLException e) {
+	    } catch (SQLException e) { //TODO gestire meglio questa gestione degli errori
 	        try {
 	            connection.rollback();
 	        } catch (SQLException rollbackEx) {
@@ -283,5 +295,62 @@ public class PlaylistDAO {
 	        }
 	    }
 	    return false;
+	}
+	
+	/**
+	 * Delete a playlist and its song associations without deleting the songs themselves
+	 */
+	public boolean deletePlaylist(int playlistId, int userId) throws SQLException {
+	    boolean originalAutoCommit = connection.getAutoCommit();
+	    
+	    try {
+	        connection.setAutoCommit(false);
+	        
+	        // First verify playlist belongs to user
+	        String checkQuery = "SELECT ID FROM Playlist WHERE ID = ? AND userID = ?";
+	        try (PreparedStatement pstatement = connection.prepareStatement(checkQuery)) {
+	            pstatement.setInt(1, playlistId);
+	            pstatement.setInt(2, userId);
+	            try (ResultSet result = pstatement.executeQuery()) {
+	                if (!result.next()) {
+	                    // Playlist doesn't exist or doesn't belong to user
+	                    return false;
+	                }
+	            }
+	        }
+	        
+	        // Delete associations in PlaylistSong
+	        String deleteAssociations = "DELETE FROM PlaylistSong WHERE playlistID = ?";
+	        try (PreparedStatement pstatement = connection.prepareStatement(deleteAssociations)) {
+	            pstatement.setInt(1, playlistId);
+	            pstatement.executeUpdate();
+	        }
+	        
+	        // Delete the playlist
+	        String deletePlaylist = "DELETE FROM Playlist WHERE ID = ? AND userID = ?";
+	        try (PreparedStatement pstatement = connection.prepareStatement(deletePlaylist)) {
+	            pstatement.setInt(1, playlistId);
+	            pstatement.setInt(2, userId);
+	            int affectedRows = pstatement.executeUpdate();
+	            
+	            if (affectedRows == 0) {
+	                connection.rollback();
+	                return false;
+	            }
+	        }
+	        
+	        connection.commit();
+	        return true;
+	        
+	    } catch (SQLException e) {
+	        connection.rollback();
+	        throw e;
+	    } finally {
+	        try {
+	            connection.setAutoCommit(originalAutoCommit);
+	        } catch (SQLException e) {
+	            e.printStackTrace();
+	        }
+	    }
 	}
 }

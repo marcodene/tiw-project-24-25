@@ -545,6 +545,23 @@ audio::-webkit-media-controls-play-button {
   color: var(--text-color-secondary);
 }
 
+/* Delete button styles */
+.delete-btn {
+  background-color: rgba(255, 91, 76, 0.8);
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.delete-btn:hover {
+  background-color: rgba(255, 70, 50, 1);
+  box-shadow: 0 2px 8px rgba(255, 70, 50, 0.3);
+}
+
 /* ===== RESPONSIVE ADJUSTMENTS ===== */
 @media (max-width: 768px) {
   body {

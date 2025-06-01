@@ -67,6 +67,12 @@
             </div>
             
             <div class="navigation">
+                <form th:action="@{/DeleteSong}" method="POST" style="display:inline-block; margin-right:10px;" 
+                      onsubmit="return confirm('Are you sure you want to delete this song? It will be removed from all playlists.');">
+                    <input type="hidden" name="songID" th:value="${song.ID}">
+                    <input type="hidden" name="playlistId" th:value="${playlistId}">
+                    <button type="submit" class="btn delete-btn">Delete Song</button>
+                </form>
                 <a th:href="@{/Logout}" class="logout-btn">Logout</a>
             </div>
         </div>

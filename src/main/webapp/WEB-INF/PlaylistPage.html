@@ -15,8 +15,14 @@
             </div>
             <div class="user-nav">
                 <a th:href="@{/Home}" class="back-link">Back to Home</a>
+                <form th:action="@{/DeletePlaylist}" method="POST" style="display:inline-block; margin: 0 10px;" 
+                      onsubmit="return confirm('Are you sure you want to delete this playlist? The songs will not be deleted.');">
+                    <input type="hidden" name="playlistId" th:value="${playlist.ID}">
+                    <button type="submit" class="btn-secondary delete-btn">Delete Playlist</button>
+                </form>
                 <a th:href="@{/Logout}" class="logout-btn">Logout</a>
             </div>
+
         </header>
         
         <!-- Songs Display Section -->

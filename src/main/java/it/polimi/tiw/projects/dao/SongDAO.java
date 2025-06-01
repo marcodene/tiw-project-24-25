@@ -1,5 +1,6 @@
 package it.polimi.tiw.projects.dao;
 
+import java.io.File;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -11,6 +12,7 @@ import java.util.List;
 import it.polimi.tiw.projects.beans.Playlist;
 import it.polimi.tiw.projects.beans.Song;
 import it.polimi.tiw.projects.beans.User;
+import it.polimi.tiw.projects.utils.FileStorageManager;
 
 public class SongDAO {
 	private Connection connection;
@@ -219,5 +221,84 @@ public class SongDAO {
 	            }
 	        }
 	    }
+	}
+	
+	public boolean deleteSong(int songID, int userID) throws SQLException {
+	    boolean originalAutoCommit = connection.getAutoCommit();
+	    
+	    try {
+	        connection.setAutoCommit(false);
+	        
+	        // 1. Recupera i percorsi dei file prima di cancellare
+	        Song song = getSongByIDAndUser(songID, userID);
+	        if (song == null) {
+	            throw new SQLException("Song not found or access denied");
+	        }
+	        
+	        // 2. Cancella da PlaylistSong (relazioni)
+	        String deleteRelations = "DELETE FROM PlaylistSong WHERE songID = ?";
+	        try (PreparedStatement pstmt = connection.prepareStatement(deleteRelations)) {
+	            pstmt.setInt(1, songID);
+	            pstmt.executeUpdate();
+	        }
+	        
+	        // 3. Cancella da Song
+	        String deleteSong = "DELETE FROM Song WHERE ID = ? AND userID = ?";
+	        try (PreparedStatement pstmt = connection.prepareStatement(deleteSong)) {
+	            pstmt.setInt(1, songID);
+	            pstmt.setInt(2, userID);
+	            int affected = pstmt.executeUpdate();
+	            if (affected == 0) {
+	                throw new SQLException("Failed to delete song");
+	            }
+	        }
+	        
+	        connection.commit();
+	        
+	        // 4. Cancella file DOPO il commit del DB
+	        deletePhysicalFiles(song);
+	        
+	        return true;
+	        
+	    } catch (SQLException e) {
+	        connection.rollback();
+	        throw e;
+	    } finally {
+	        connection.setAutoCommit(originalAutoCommit);
+	    }
+	}
+	
+	private void deletePhysicalFiles(Song song) {
+	    if (song.getAlbumCoverPath() != null) {
+	        File coverFile = new File(FileStorageManager.getBaseStoragePath() + 
+	                                  song.getAlbumCoverPath());
+	        if (coverFile.exists()) {
+	            coverFile.delete();
+	        }
+	    }
+	    
+	    if (song.getAudioFilePath() != null) {
+	        File audioFile = new File(FileStorageManager.getBaseStoragePath() + 
+	                                  song.getAudioFilePath());
+	        if (audioFile.exists()) {
+	            audioFile.delete();
+	        }
+	    }
+	}
+	
+	public boolean songBelongsToUser(int songID, int userID) throws SQLException {
+	    String query = "SELECT COUNT(*) FROM Song WHERE ID = ? AND userID = ?";
+	    
+	    try (PreparedStatement pstatement = connection.prepareStatement(query)) {
+	        pstatement.setInt(1, songID);
+	        pstatement.setInt(2, userID);
+	        
+	        try (ResultSet result = pstatement.executeQuery()) {
+	            if (result.next()) {
+	                return result.getInt(1) > 0;
+	            }
+	        }
+	    }
+	    return false;
 	}
 }

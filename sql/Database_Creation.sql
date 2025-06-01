@@ -31,10 +31,10 @@ CREATE TABLE IF NOT EXISTS Song (
     name VARCHAR(100) NOT NULL,
     genreID INT NOT NULL,
     file VARCHAR(255) NOT NULL,
-    albumCover VARCHAR(255),
-    albumName VARCHAR(100),
-    albumArtist VARCHAR(100),
-    albumReleaseYear INT,
+    albumCover VARCHAR(255) NOT NULL,
+    albumName VARCHAR(100) NOT NULL,
+    albumArtist VARCHAR(100) NOT NULL,
+    albumReleaseYear INT NOT NULL,
     FOREIGN KEY (userID) REFERENCES User(ID) ON DELETE CASCADE,
     FOREIGN KEY (genreID) REFERENCES Genre(ID) ON DELETE RESTRICT
 );
