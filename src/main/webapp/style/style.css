@@ -562,6 +562,59 @@ audio::-webkit-media-controls-play-button {
   box-shadow: 0 2px 8px rgba(255, 70, 50, 0.3);
 }
 
+.account-btn {
+  display: inline-block;
+  padding: 8px 16px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-color);
+  border-radius: var(--border-radius-sm);
+  transition: var(--transition);
+  margin-right: 10px;
+}
+
+.account-btn:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Account page styles */
+.account-info {
+  margin-bottom: 1.5rem;
+}
+
+.account-info p {
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.warning-box {
+  background-color: rgba(255, 91, 76, 0.1);
+  border-left: 3px solid var(--accent-color);
+  padding: 15px;
+  margin-bottom: 20px;
+  border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
+}
+
+.warning-box p {
+  color: var(--text-color);
+  margin-bottom: 0.5rem;
+}
+
+.warning-box ul {
+  margin-left: 1.5rem;
+  margin-bottom: 0;
+}
+
+.warning-box li {
+  color: var(--text-color-secondary);
+  margin-bottom: 0.3rem;
+}
+
+.form-actions {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
 /* ===== RESPONSIVE ADJUSTMENTS ===== */
 @media (max-width: 768px) {
   body {
