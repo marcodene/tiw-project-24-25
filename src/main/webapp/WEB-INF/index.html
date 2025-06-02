@@ -29,6 +29,11 @@
                 
                 <p th:if="${errorMsg}" class="error-message" th:text="${errorMsg}"></p>
             </form>
+            
+            <div class="register-section">
+                <p>Don’t have an account?</p>
+                <a th:href="@{/GoToRegisterPage}" class="register-button">Sign Up</a>
+            </div>
         </div>
     </div>
 </body>

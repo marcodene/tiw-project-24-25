@@ -3,6 +3,7 @@ package it.polimi.tiw.projects.dao;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -107,5 +108,42 @@ public class UserDAO {
 				e.printStackTrace();
 			}
 		}
+	}
+	
+	public boolean existsUsername(String username) throws SQLException{
+		String query = "SELECT id FROM User WHERE username = ?";
+	    try (PreparedStatement pstatement = connection.prepareStatement(query)) {
+	        pstatement.setString(1, username);
+	        try (ResultSet result = pstatement.executeQuery()) {
+	            return result.isBeforeFirst(); // True se c'è almeno un risultato
+	        }
+	    }
+	}
+	
+	public int insertUser(String username, String password, String name, String surname) throws SQLException {
+	    String query = "INSERT INTO User (username, password, name, surname) VALUES (?, ?, ?, ?)";
+	    try (PreparedStatement pstatement = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
+	        pstatement.setString(1, username);
+	        pstatement.setString(2, password);
+	        pstatement.setString(3, name);
+	        pstatement.setString(4, surname);
+	        int rowsAffected = pstatement.executeUpdate();
+	        
+	        if (rowsAffected == 0) {
+                throw new SQLException("Creating User failed, no rows affected.");
+            }
+            
+            // Get the generated user ID
+            try (ResultSet generatedKeys = pstatement.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                	int userId = generatedKeys.getInt(1);
+                	return userId;
+                } else {
+                    throw new SQLException("Creating user failed, no ID obtained.");
+                }
+            }
+	        
+
+	    }
 	}
 }

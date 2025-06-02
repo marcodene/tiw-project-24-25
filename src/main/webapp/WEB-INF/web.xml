@@ -6,6 +6,6 @@ version="4.0">
 	<display-name>Progetto-TIW-24-25</display-name>
 	<error-page>
     	<error-code>404</error-code>
-    <location>/404.html</location>
-</error-page>
+    	<location>/404.html</location>
+	</error-page>
 </web-app>
