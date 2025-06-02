@@ -27,6 +27,12 @@
         
         <!-- Songs Display Section -->
         <section class="section">
+        	
+        	<div th:if="${generalError}" 
+                 class="error-message error-general">
+                <p th:text="${generalError}"></p>
+            </div>
+            
             <div class="card">
                 <div class="card-header">
                     <h2>Songs in this Playlist</h2>
@@ -58,7 +64,7 @@
                             <td th:each="song : ${currentPageSongs}">
                                 <div class="song-card">
                                     <div>
-                                        <a th:href="@{/GoToPlayerPage(playlistId=${playlist.ID}, songName=${song.name})}">
+                                        <a th:href="@{/GoToPlayerPage(playlistId=${playlist.ID}, songID=${song.ID})}">
                                             <img th:if="${song.albumCoverPath != null and !song.albumCoverPath.isEmpty()}"
                                                  class="album-cover"
                                                  th:src="@{'/GetImage' + ${song.albumCoverPath}}"

@@ -93,6 +93,9 @@ public class GoToPlayerPage extends HttpServlet {
         } catch (SQLException e) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error retrieving song data");
             e.printStackTrace();
+        } catch (NumberFormatException e) {
+        	response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Song ID missing or not valid");
+            e.printStackTrace();
         }
 	}
 
