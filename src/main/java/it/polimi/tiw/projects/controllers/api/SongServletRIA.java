@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Year;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,7 +32,7 @@ import it.polimi.tiw.projects.beans.User;
 import it.polimi.tiw.projects.dao.GenreDAO;
 import it.polimi.tiw.projects.dao.SongDAO;
 import it.polimi.tiw.projects.utils.ConnectionHandler;
-import it.polimi.tiw.projects.utils.FileStorageManager; // Assuming this utility is appropriately configured
+import it.polimi.tiw.projects.utils.FileStorageManager;
 
 @WebServlet(name = "SongServletRIA", urlPatterns = {"/api/songs", "/api/songs/*"})
 @MultipartConfig
@@ -40,20 +41,16 @@ public class SongServletRIA extends HttpServlet {
     private Connection connection = null;
     private Gson gson = new Gson();
     private String baseStoragePath;
-    private String audioFilesDir;
-    private String coverImagesDir;
-
+    public static final int MIN_RELEASE_YEAR = 1600;
+    public static final int MAX_RELEASE_YEAR = Year.now().getValue();
 
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
         connection = ConnectionHandler.getConnection(getServletContext());
         // Initialize FileStorageManager and get base paths
-        // This might throw if properties are not found, should be handled
         try {
             FileStorageManager.initialize(getServletContext()); 
             baseStoragePath = FileStorageManager.getBaseStoragePath();
-            audioFilesDir = FileStorageManager.getAudioFilesPath();
-            coverImagesDir = FileStorageManager.getCoverImagesPath();
         } catch (Exception e) {
             throw new ServletException("Failed to initialize FileStorageManager", e);
         }
@@ -109,7 +106,7 @@ public class SongServletRIA extends HttpServlet {
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) // Upload new song
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
@@ -121,132 +118,257 @@ public class SongServletRIA extends HttpServlet {
         }
         User user = (User) session.getAttribute("user");
 
-        // Retrieve parts from multipart request
-        String title = request.getParameter("title");
-        String albumName = request.getParameter("albumName");
-        String artistName = request.getParameter("artistName");
-        String yearStr = request.getParameter("albumReleaseYear");
-        String genreName = request.getParameter("genreName"); // Client sends genre name
-
-        Part audioFilePart = request.getPart("audioFile"); // <input type="file" name="audioFile">
-        Part imageFilePart = request.getPart("imageFile"); // <input type="file" name="imageFile"> (optional)
-
-        Map<String, String> errors = new HashMap<>();
-        if (title == null || title.trim().isEmpty()) errors.put("title", "Title is required.");
-        if (albumName == null || albumName.trim().isEmpty()) errors.put("albumName", "Album name is required.");
-        if (artistName == null || artistName.trim().isEmpty()) errors.put("artistName", "Artist name is required.");
-        if (yearStr == null || yearStr.trim().isEmpty()) errors.put("albumReleaseYear", "Release year is required.");
-        if (genreName == null || genreName.trim().isEmpty()) errors.put("genreName", "Genre is required.");
-        if (audioFilePart == null || audioFilePart.getSize() == 0) errors.put("audioFile", "Audio file is required.");
-
-        int albumReleaseYear = 0;
-        if (yearStr != null && !yearStr.trim().isEmpty()) {
-            try {
-                albumReleaseYear = Integer.parseInt(yearStr);
-            } catch (NumberFormatException e) {
-                errors.put("albumReleaseYear", "Invalid year format.");
-            }
-        }
+        // Extract form data and validate
+        Map<String, Object> formData = extractFormData(request);
+        Map<String, String> errors = validateFormData(formData);
         
-        GenreDAO genreDAO = new GenreDAO(connection);
-        int genreId = -1;
-        if(genreName != null && !genreName.trim().isEmpty()){
-            try {
-                genreId = genreDAO.getGenreIdByName(genreName);
-                if(genreId == -1) errors.put("genreName", "Genre not found: " + genreName);
-            } catch (SQLException e) {
-                errors.put("genreName", "Error verifying genre: " + e.getMessage());
-            }
-        }
-
-
+        // Get and validate files
+        Part audioFilePart = request.getPart("audioFile");
+        Part imageFilePart = request.getPart("imageFile");
+        
+        // Validate files
+        validateFiles(audioFilePart, imageFilePart, errors);
+        
         if (!errors.isEmpty()) {
             sendError(response, HttpServletResponse.SC_BAD_REQUEST, "Validation failed", errors);
             return;
         }
 
-        SongDAO songDAO = new SongDAO(connection);
+        // Validate genre exists
         try {
-            if (songDAO.existsSongWithSameData(title, albumName, artistName, albumReleaseYear, genreId, user.getId())) {
+            validateGenre(formData, errors);
+            if (!errors.isEmpty()) {
+                sendError(response, HttpServletResponse.SC_BAD_REQUEST, "Validation failed", errors);
+                return;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database error validating genre: " + e.getMessage());
+            return;
+        }
+
+        // Check if song already exists
+        try {
+            if (songExists(formData, user.getId())) {
                 sendError(response, HttpServletResponse.SC_CONFLICT, "This song already exists in your library.");
                 return;
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database error checking song existence: " + e.getMessage());
+            return;
+        }
 
-            // File saving logic
-            String audioFileName = null;
-            String imageFileName = null;
-            String relativeAudioPath = null;
-            String relativeImagePath = null;
+        // Upload files and get paths
+        Map<String, String> filePaths = null;
+        try {
+            filePaths = uploadFiles(audioFilePart, imageFilePart);
+        } catch (IOException e) {
+            e.printStackTrace();
+            sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error uploading files: " + e.getMessage());
+            return;
+        }
 
-            // Save audio file
-            String originalAudioFileName = Paths.get(audioFilePart.getSubmittedFileName()).getFileName().toString();
-            String audioExtension = originalAudioFileName.substring(originalAudioFileName.lastIndexOf("."));
-            audioFileName = UUID.randomUUID().toString() + audioExtension;
-            File audioUploadDir = new File(baseStoragePath + File.separator + audioFilesDir);
-            if (!audioUploadDir.exists()) audioUploadDir.mkdirs();
-            File audioFile = new File(audioUploadDir, audioFileName);
-            try (InputStream input = audioFilePart.getInputStream()) {
-                Files.copy(input, audioFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                relativeAudioPath = audioFilesDir + File.separator + audioFileName;
-            } catch (IOException e) {
-                e.printStackTrace();
-                sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to save audio file.");
-                return;
-            }
-
-            // Save image file (if provided)
-            if (imageFilePart != null && imageFilePart.getSize() > 0) {
-                String originalImageFileName = Paths.get(imageFilePart.getSubmittedFileName()).getFileName().toString();
-                String imageExtension = originalImageFileName.substring(originalImageFileName.lastIndexOf("."));
-                imageFileName = UUID.randomUUID().toString() + imageExtension;
-                File imageUploadDir = new File(baseStoragePath + File.separator + coverImagesDir);
-                if (!imageUploadDir.exists()) imageUploadDir.mkdirs();
-                File imageFile = new File(imageUploadDir, imageFileName);
-                try (InputStream input = imageFilePart.getInputStream()) {
-                    Files.copy(input, imageFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    relativeImagePath = coverImagesDir + File.separator + imageFileName;
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    // If image saving fails, maybe proceed without image or send error? For now, error.
-                    sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to save image file.");
-                    // Cleanup audio file if image saving fails?
-                    if(audioFile.exists()) audioFile.delete();
-                    return;
-                }
-            }
-
-            Song newSong = new Song();
-            newSong.setUserID(user.getId());
-            newSong.setName(title);
-            newSong.setAlbumName(albumName);
-            newSong.setArtistName(artistName);
-            newSong.setAlbumReleaseYear(albumReleaseYear);
-            newSong.setGenre(genreName); // DAO will resolve genreName to ID via getGenreIdByName
-            newSong.setAudioFilePath(relativeAudioPath);
-            newSong.setAlbumCoverPath(relativeImagePath);
-
-            Song createdSong = songDAO.uploadSong(newSong); // This now returns the created Song bean
-
+        // Create and save the song
+        try {
+            Song createdSong = createAndSaveSong(formData, filePaths, user.getId());
             if (createdSong != null) {
                 sendSuccess(response, createdSong.toJSON(), HttpServletResponse.SC_CREATED);
             } else {
-                // Should not happen if DAO throws SQLException on failure
-                sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Song creation failed in DAO.");
-                 // Cleanup files if DAO failed after files were saved
-                if(audioFile.exists()) audioFile.delete();
-                if(relativeImagePath != null) {
-                    File imageToDelete = new File(baseStoragePath + File.separator + relativeImagePath);
-                    if(imageToDelete.exists()) imageToDelete.delete();
-                }
+                // Clean up files since database operation failed
+                deleteUploadedFiles(filePaths.get("imagePath"), filePaths.get("audioPath"));
+                sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Song creation failed in database.");
             }
-
         } catch (SQLException e) {
             e.printStackTrace();
+            // Clean up files since database operation failed
+            deleteUploadedFiles(filePaths.get("imagePath"), filePaths.get("audioPath"));
             sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database error during song upload: " + e.getMessage());
-        } catch (Exception e) { // Catch other potential errors like file saving issues
+        } catch (Exception e) {
             e.printStackTrace();
+            // Clean up files since an error occurred
+            deleteUploadedFiles(filePaths.get("imagePath"), filePaths.get("audioPath"));
             sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "An unexpected error occurred: " + e.getMessage());
         }
+    }
+
+    /**
+     * Extracts form data from the request
+     */
+    private Map<String, Object> extractFormData(HttpServletRequest request) {
+        Map<String, Object> formData = new HashMap<>();
+        formData.put("title", request.getParameter("title"));
+        formData.put("albumName", request.getParameter("albumName"));
+        formData.put("artistName", request.getParameter("artistName"));
+        formData.put("albumReleaseYear", request.getParameter("albumReleaseYear"));
+        formData.put("genreName", request.getParameter("genreName"));
+        return formData;
+    }
+
+    /**
+     * Validates form data and returns any errors
+     */
+    private Map<String, String> validateFormData(Map<String, Object> formData) {
+        Map<String, String> errors = new HashMap<>();
+        
+        // Validate required text fields
+        String title = (String) formData.get("title");
+        String albumName = (String) formData.get("albumName");
+        String artistName = (String) formData.get("artistName");
+        String yearStr = (String) formData.get("albumReleaseYear");
+        String genreName = (String) formData.get("genreName");
+        
+        if (title == null || title.trim().isEmpty()) 
+            errors.put("title", "Title is required.");
+        if (albumName == null || albumName.trim().isEmpty()) 
+            errors.put("albumName", "Album name is required.");
+        if (artistName == null || artistName.trim().isEmpty()) 
+            errors.put("artistName", "Artist name is required.");
+        if (yearStr == null || yearStr.trim().isEmpty()) 
+            errors.put("albumReleaseYear", "Release year is required.");
+        if (genreName == null || genreName.trim().isEmpty()) 
+            errors.put("genreName", "Genre is required.");
+        
+        // Validate year format and range
+        if (yearStr != null && !yearStr.trim().isEmpty()) {
+            try {
+                int albumReleaseYear = Integer.parseInt(yearStr);
+                formData.put("albumReleaseYearInt", albumReleaseYear); // Store parsed int for later use
+                
+                if (albumReleaseYear < MIN_RELEASE_YEAR || albumReleaseYear > MAX_RELEASE_YEAR) {
+                    errors.put("albumReleaseYear", "Year must be between " + MIN_RELEASE_YEAR + " and " + MAX_RELEASE_YEAR);
+                }
+            } catch (NumberFormatException e) {
+                errors.put("albumReleaseYear", "Invalid year format.");
+            }
+        }
+        
+        return errors;
+    }
+
+    /**
+     * Validates uploaded files and adds any errors to the provided map
+     */
+    private void validateFiles(Part audioFilePart, Part imageFilePart, Map<String, String> errors) {
+        // Validate audio file
+        if (audioFilePart == null || audioFilePart.getSize() == 0) {
+            errors.put("audioFile", "Audio file is required.");
+        } else if (audioFilePart.getSize() > 10 * 1024 * 1024) { // 10MB limit
+            errors.put("audioFile", "Audio file must be smaller than 10MB.");
+        } else if (!isValidAudioFile(audioFilePart)) {
+            errors.put("audioFile", "Invalid audio file format. Only MP3, WAV, OGG, and M4A files are allowed.");
+        }
+
+        // Validate image file (optional)
+        if (imageFilePart != null && imageFilePart.getSize() > 0) {
+            if (imageFilePart.getSize() > 5 * 1024 * 1024) { // 5MB limit
+                errors.put("imageFile", "Image file must be smaller than 5MB.");
+            } else if (!isValidImageFile(imageFilePart)) {
+                errors.put("imageFile", "Invalid image file format. Only JPG, PNG, and GIF files are allowed.");
+            }
+        }
+    }
+
+    /**
+     * Validates that the genre exists in the database
+     */
+    private void validateGenre(Map<String, Object> formData, Map<String, String> errors) throws SQLException {
+        String genreName = (String) formData.get("genreName");
+        if (genreName != null && !genreName.trim().isEmpty()) {
+            GenreDAO genreDAO = new GenreDAO(connection);
+            int genreId = genreDAO.getGenreIdByName(genreName);
+            if (genreId == -1) {
+                errors.put("genreName", "Genre not found: " + genreName);
+            } else {
+                formData.put("genreId", genreId); // Store for later use
+            }
+        }
+    }
+
+    /**
+     * Checks if a song with the same data already exists
+     */
+    private boolean songExists(Map<String, Object> formData, int userId) throws SQLException {
+        SongDAO songDAO = new SongDAO(connection);
+        String title = (String) formData.get("title");
+        String albumName = (String) formData.get("albumName");
+        String artistName = (String) formData.get("artistName");
+        int albumReleaseYear = (int) formData.get("albumReleaseYearInt");
+        int genreId = (int) formData.get("genreId");
+        
+        return songDAO.existsSongWithSameData(title, albumName, artistName, albumReleaseYear, genreId, userId);
+    }
+
+    /**
+     * Uploads files and returns their relative paths
+     */
+    private Map<String, String> uploadFiles(Part audioFilePart, Part imageFilePart) throws IOException {
+        Map<String, String> filePaths = new HashMap<>();
+        
+        // Save audio file
+        String audioFileName = getUniqueFileName(audioFilePart.getSubmittedFileName());
+        String audioFilesDir = FileStorageManager.getAudioFilesPath(); // Full path for saving
+        File audioUploadDir = new File(audioFilesDir);
+        if (!audioUploadDir.exists()) audioUploadDir.mkdirs();
+        File audioFile = new File(audioUploadDir, audioFileName);
+        
+        try (InputStream input = audioFilePart.getInputStream()) {
+            Files.copy(input, audioFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            // Store ONLY the relative path
+            String relativeAudioPath = "/songs/" + audioFileName;
+            filePaths.put("audioPath", relativeAudioPath);
+        }
+
+        // Save image file (if provided)
+        if (imageFilePart != null && imageFilePart.getSize() > 0) {
+            String imageFileName = getUniqueFileName(imageFilePart.getSubmittedFileName());
+            String coverImagesDir = FileStorageManager.getCoverImagesPath(); // Full path for saving
+            File imageUploadDir = new File(coverImagesDir);
+            if (!imageUploadDir.exists()) imageUploadDir.mkdirs();
+            File imageFile = new File(imageUploadDir, imageFileName);
+            
+            try (InputStream input = imageFilePart.getInputStream()) {
+                Files.copy(input, imageFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                // Store ONLY the relative path
+                String relativeImagePath = "/covers/" + imageFileName;
+                filePaths.put("imagePath", relativeImagePath);
+            } catch (IOException e) {
+                // If image saving fails, clean up audio file and throw exception
+                if (audioFile.exists()) audioFile.delete();
+                throw e;
+            }
+        }
+        
+        return filePaths;
+    }
+
+    /**
+     * Creates a unique filename for uploaded files
+     */
+    private String getUniqueFileName(String originalFileName) {
+        String extension = "";
+        if (originalFileName.contains(".")) {
+            extension = originalFileName.substring(originalFileName.lastIndexOf("."));
+        }
+        return UUID.randomUUID().toString() + extension;
+    }
+
+    /**
+     * Creates and saves a song to the database
+     */
+    private Song createAndSaveSong(Map<String, Object> formData, Map<String, String> filePaths, int userId) throws SQLException {
+        Song newSong = new Song();
+        newSong.setUserID(userId);
+        newSong.setName((String) formData.get("title"));
+        newSong.setAlbumName((String) formData.get("albumName"));
+        newSong.setArtistName((String) formData.get("artistName"));
+        newSong.setAlbumReleaseYear((int) formData.get("albumReleaseYearInt"));
+        newSong.setGenre((String) formData.get("genreName"));
+        newSong.setAudioFilePath(filePaths.get("audioPath"));
+        newSong.setAlbumCoverPath(filePaths.get("imagePath"));
+
+        SongDAO songDAO = new SongDAO(connection);
+        return songDAO.uploadSong(newSong);
     }
 
     @Override
@@ -286,6 +408,70 @@ public class SongServletRIA extends HttpServlet {
         } catch (SQLException e) {
             e.printStackTrace();
             sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database error: " + e.getMessage());
+        }
+    }
+    
+    // Verify if the file is a valid image file
+    private boolean isValidImageFile(Part filePart) {
+        String fileName = filePart.getSubmittedFileName().toLowerCase();
+        String contentType = filePart.getContentType();
+        
+        // Check file extension
+        boolean validExtension = fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") || 
+                                 fileName.endsWith(".png") || fileName.endsWith(".gif");
+        
+        // Check MIME type
+        boolean validMimeType = contentType != null && 
+                               (contentType.equals("image/jpeg") || 
+                                contentType.equals("image/png") || 
+                                contentType.equals("image/gif"));
+        
+        return validExtension && validMimeType;
+    }
+    
+    // Verify if the file is a valid audio file
+    private boolean isValidAudioFile(Part filePart) {
+        String fileName = filePart.getSubmittedFileName().toLowerCase();
+        String contentType = filePart.getContentType();
+        
+        // Check file extension
+        boolean validExtension = fileName.endsWith(".mp3") || fileName.endsWith(".wav") || 
+                                 fileName.endsWith(".ogg") || fileName.endsWith(".m4a");
+        
+        // Check MIME type
+        boolean validMimeType = contentType != null && 
+                               (contentType.startsWith("audio/") || 
+                                contentType.equals("application/ogg"));
+        
+        return validExtension && validMimeType;
+    }
+    
+    // Helper method to delete uploaded files in case of errors
+    private void deleteUploadedFiles(String coverPath, String audioPath) {
+        if (coverPath != null) {
+            try {
+                // Remove leading slash if present for correct path construction
+                String relativePath = coverPath.startsWith("/") ? coverPath.substring(1) : coverPath;
+                File coverFile = new File(FileStorageManager.getBaseStoragePath(), relativePath);
+                if (coverFile.exists()) {
+                    coverFile.delete();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        
+        if (audioPath != null) {
+            try {
+                // Remove leading slash if present for correct path construction
+                String relativePath = audioPath.startsWith("/") ? audioPath.substring(1) : audioPath;
+                File audioFile = new File(FileStorageManager.getBaseStoragePath(), relativePath);
+                if (audioFile.exists()) {
+                    audioFile.delete();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
     
