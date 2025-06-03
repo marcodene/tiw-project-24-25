@@ -1,9 +1,15 @@
+# -------------------------------------------------------------------
+# === FILES TO KEEP IN THE PROJECT  ===
+!/.project
+!/.classpath
+!.settings/
+# -------------------------------------------------------------------
+
+
+
 uploads/
 
 # Eclipse project files
-.classpath
-.project
-.settings/
 .metadata/
 bin/
 tmp/
@@ -15,7 +21,6 @@ local.properties
 
 # Java compiled files
 *.class
-*.jar
 *.war
 *.ear
 
