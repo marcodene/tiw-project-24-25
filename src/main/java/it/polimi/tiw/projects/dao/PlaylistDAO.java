@@ -101,21 +101,21 @@ public class PlaylistDAO {
     }
 
 	public boolean existsPlaylistByNameAndUser(String name, int userID) throws SQLException{
-		String query = "SELECT name FROM Song WHERE name=? and userID=?";
-		
-		try (PreparedStatement pstatement = connection.prepareStatement(query);) {
-			pstatement.setString(1, name);
-			pstatement.setInt(2, userID);
-			try (ResultSet result = pstatement.executeQuery();) {
-				if(!result.isBeforeFirst())
-					return false;
-				else {
-					return true;
-				}
-			}
-		}
+	    String query = "SELECT COUNT(*) FROM Playlist WHERE name=? and userID=?";
+	    
+	    try (PreparedStatement pstatement = connection.prepareStatement(query)) {
+	        pstatement.setString(1, name);
+	        pstatement.setInt(2, userID);
+	        try (ResultSet result = pstatement.executeQuery()) {
+	            if (result.next()) {
+	                int count = result.getInt(1);
+	                return count > 0;
+	            }
+	        }
+	    }
+	    return false;
 	}
-
+	
 	public List<Playlist> getAllPlaylistsByUserId(int userID) throws SQLException {
 		String query = "SELECT * FROM Playlist WHERE userID = ? ORDER BY creationDate DESC;";
 	    List<Playlist> playlists = new ArrayList<>();

@@ -21,6 +21,7 @@ import it.polimi.tiw.projects.beans.User;
 import it.polimi.tiw.projects.dao.PlaylistDAO;
 import it.polimi.tiw.projects.dao.SongDAO;
 import it.polimi.tiw.projects.utils.ConnectionHandler;
+import it.polimi.tiw.projects.utils.FlashMessagesManager;
 
 @WebServlet("/CreatePlaylist")
 public class CreatePlaylist extends HttpServlet {
@@ -44,9 +45,8 @@ public class CreatePlaylist extends HttpServlet {
 			return;
 		}
 		
-		// Crea una mappa per i messaggi di errore e valori del form
+		// Crea una mappa per i messaggi di errore
 		Map<String, String> errorMessages = new HashMap<>();
-		Map<String, String> formValues = new HashMap<>();
 		String successMessage = null;
 		boolean hasErrors = false;
 		
@@ -62,7 +62,7 @@ public class CreatePlaylist extends HttpServlet {
 		            selectedSongIDs[i] = Integer.parseInt(selectedSongIDStrings[i]);
 		        }
 		    } catch (NumberFormatException e) {
-		        errorMessages.put("selectedSongsError", "ID delle canzoni non validi");
+		        errorMessages.put("playlist_songsError", "ID delle canzoni non validi");
 		        hasErrors = true;
 		    }
 		}
@@ -73,32 +73,31 @@ public class CreatePlaylist extends HttpServlet {
 		
 		try {
 			playlistName = StringEscapeUtils.escapeJava(request.getParameter("playlistName"));
-			formValues.put("playlistName", playlistName);
-			
 			
 			if (playlistName == null || playlistName.isEmpty()) {
-			    errorMessages.put("playlistNameError", "Il nome della playlist è obbligatorio");
+			    errorMessages.put("playlist_nameError", "Il nome della playlist è obbligatorio");
 			    hasErrors = true;
 			}
 			
 			if (selectedSongIDs == null || selectedSongIDs.length == 0) {
-			    errorMessages.put("selectedSongsError", "Devi selezionare almeno una canzone");
+			    errorMessages.put("playlist_songsError", "Devi selezionare almeno una canzone");
 			    hasErrors = true;
 			}
 			
 			if(containsDuplicates(selectedSongIDs)) {
-				errorMessages.put("selectedSongsError", "La playlist non può contenere canzoni duplicate");
+				errorMessages.put("playlist_songsError", "La playlist non può contenere canzoni duplicate");
 				hasErrors = true;
 			}
 			
 			try {
 				if(!hasErrors && !songDAO.existAllSongsByIDsAndUser(selectedSongIDs, user.getId())) {
-				    errorMessages.put("selectedSongsError", "Tutte le canzoni devono essere già state caricate");
+				    errorMessages.put("playlist_songsError", "Tutte le canzoni devono essere già state caricate");
 				    hasErrors = true;
 			    }
 			
+			    // Verifica se esiste già una playlist con questo nome per l'utente
 			    if(!hasErrors && playlistDAO.existsPlaylistByNameAndUser(playlistName, user.getId())) {
-				    errorMessages.put("playlistNameError", "Esiste già una playlist con questo nome");
+				    errorMessages.put("playlist_nameError", "Esiste già una playlist con questo nome");
 				    hasErrors = true;
 			    }
 			    
@@ -107,40 +106,47 @@ public class CreatePlaylist extends HttpServlet {
 			    	boolean success = playlistDAO.createPlaylist(playlistName, selectedSongIDs, user.getId());
     			
     			    if (!success) {
-        	            errorMessages.put("generalError", "La playlist non è stata creata. Verifica che i valori siano corretti.");
+        	            errorMessages.put("playlist_generalError", "La playlist non è stata creata. Verifica che i valori siano corretti.");
         	            hasErrors = true;
         	        } else {
         	            // Creazione completata con successo
         	            successMessage = "Playlist '" + playlistName + "' creata con successo!";
-        	            // Pulisci i valori del form dopo il successo
-        	            formValues.clear();
         	        }
 			    }
 			} catch (SQLException e) {
-				errorMessages.put("generalError", "Errore del database: " + e.getMessage());
+				errorMessages.put("playlist_generalError", "Errore del database: " + e.getMessage());
 				hasErrors = true;
 				e.printStackTrace();
 			}
 			
 		} catch (Exception e) {
-			errorMessages.put("generalError", "Errore durante l'elaborazione dei dati: " + e.getMessage());
+			errorMessages.put("playlist_generalError", "Errore durante l'elaborazione dei dati: " + e.getMessage());
 			hasErrors = true;
 			e.printStackTrace();
 		}
 		
-		// Aggiungiamo gli errori e i valori come attributi della request (non della sessione)
-		if (!errorMessages.isEmpty()) {
-		    request.setAttribute("playlistErrorMessages", errorMessages);
-		}
-		if (!formValues.isEmpty()) {
-		    request.setAttribute("playlistFormValues", formValues);
-		}
+		// PATTERN POST-REDIRECT-GET: Manteniamo l'UX originale
+		
+		// Aggiungi messaggio di successo come flash message
 		if (successMessage != null) {
-		    request.setAttribute("successMessage", successMessage);
+		    FlashMessagesManager.addSuccessMessage(request, successMessage);
 		}
 		
-		// Forward alla servlet GoToHomePage
-		request.getRequestDispatcher("/Home").forward(request, response);
+		// Aggiungi errori strutturati per campo (per mantenere UX originale)
+		if (!errorMessages.isEmpty()) {
+		    FlashMessagesManager.addFieldErrors(request, errorMessages);
+		}
+		
+		// Aggiungi valori del form (solo se ci sono errori, per ri-popolare i campi)
+		if (hasErrors && playlistName != null) {
+		    Map<String, String> formValues = new HashMap<>();
+		    formValues.put("name", playlistName);  // Chiave corretta per compatibilità template
+		    FlashMessagesManager.addFormValues(request, formValues);
+		}
+		
+		// REDIRECT invece di forward - questo elimina le duplicazioni!
+		String homePath = getServletContext().getContextPath() + "/Home";
+		response.sendRedirect(homePath);
 	}
 	
 	private boolean containsDuplicates(int[] songIDs) {

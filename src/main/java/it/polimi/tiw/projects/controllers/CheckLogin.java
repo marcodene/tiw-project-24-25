@@ -11,6 +11,8 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.thymeleaf.TemplateEngine;
@@ -20,6 +22,7 @@ import org.thymeleaf.templateresolver.WebApplicationTemplateResolver;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
 
 import it.polimi.tiw.projects.utils.ConnectionHandler;
+import it.polimi.tiw.projects.utils.FlashMessagesManager;
 import it.polimi.tiw.projects.dao.UserDAO;
 import it.polimi.tiw.projects.beans.User;
 
@@ -44,8 +47,11 @@ public class CheckLogin extends HttpServlet {
 		this.templateEngine.setTemplateResolver(templateResolver);
 		templateResolver.setSuffix(".html");
     }
-
-	protected void doPost (HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		Map<String, String> errorMessages = new HashMap<>();
+		boolean hasErrors = false;
+		
 		String username = null;
 		String password = null;
 		
@@ -53,38 +59,50 @@ public class CheckLogin extends HttpServlet {
 			username = StringEscapeUtils.escapeJava(request.getParameter("username"));
 			password = StringEscapeUtils.escapeJava(request.getParameter("password"));
 			
-			if(username == null || password==null || username.isEmpty() || password.isEmpty()) {
-				throw new Exception("Missing or empty credential value");
+			// Validazione parametri
+			if(username == null || password == null || username.trim().isEmpty() || password.trim().isEmpty()) {
+				errorMessages.put("login_credentialsError", "Username and password are required");
+				hasErrors = true;
 			}
 		} catch (Exception e) {
-			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing or empty credential value");
-			return;
+			errorMessages.put("login_generalError", "Invalid request data: " + e.getMessage());
+			hasErrors = true;
 		}
 		
-		// query db to authenticate for user
-		UserDAO userDao = new UserDAO(connection);
 		User user = null;
-		try {
-			user = userDao.checkCredentials(username, password);
-		}catch (SQLException e) {
-			response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Not Possible to check credentials");
-			return;
+		
+		// Se non ci sono errori di validazione, controlla le credenziali
+		if (!hasErrors) {
+			UserDAO userDao = new UserDAO(connection);
+			try {
+				user = userDao.checkCredentials(username, password);
+				
+				if (user == null) {
+					errorMessages.put("login_credentialsError", "Incorrect username or password");
+					hasErrors = true;
+				}
+			} catch (SQLException e) {
+				errorMessages.put("login_generalError", "Database error occurred. Please try again later.");
+				hasErrors = true;
+				e.printStackTrace();
+			}
 		}
 		
-		// If the user exists, add info to the session and go to home page, otherwise
-		// show login page with error message
-		String path;
-		if(user == null) {
-			JakartaServletWebApplication webApplication = JakartaServletWebApplication.buildApplication(getServletContext());
-			WebContext context = new WebContext(webApplication.buildExchange(request, response), request.getLocale());
-			
-			context.setVariable("errorMsg", "Incorrect username or password");
-			path = "/WEB-INF/index.html";
-			templateEngine.process(path, context, response.getWriter());
+		// PATTERN POST-REDIRECT-GET: Gestione risultato login
+		
+		if (!hasErrors && user != null) {
+			// LOGIN RIUSCITO: Crea sessione e redirect alla Home
+			request.getSession().setAttribute("user", user);
+			String homePath = getServletContext().getContextPath() + "/Home";
+			response.sendRedirect(homePath);
 		} else {
-			request.getSession().setAttribute("user",  user);
-			path = getServletContext().getContextPath() + "/Home";
-			response.sendRedirect(path);
+			// LOGIN FALLITO: Flash messages di errore e redirect alla LoginPage
+			if (!errorMessages.isEmpty()) {
+				FlashMessagesManager.addFieldErrors(request, errorMessages);
+			}
+			
+			String loginPath = getServletContext().getContextPath() + "/";
+			response.sendRedirect(loginPath);
 		}
 	}
 	
@@ -95,5 +113,4 @@ public class CheckLogin extends HttpServlet {
 			e.printStackTrace();
 		}
 	}
-
 }

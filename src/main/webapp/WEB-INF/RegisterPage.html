@@ -19,11 +19,7 @@
                 <p th:text="${errorMessages.get('generalError')}"></p>
             </div>
             
-            <!-- Success message -->
-            <div th:if="${successMessage != null}" class="success-message">
-                <p th:text="${successMessage}"></p>
-            </div>
-            
+            <!-- RIMOSSO: successMessage (ora va al LoginPage) -->
             
             <form th:action="@{/Register}" method="POST">
                 <div class="form-group">

@@ -19,6 +19,16 @@
             </div>
         </header>
         
+        <!-- DEBUG TEMPORANEO - RIMUOVERE DOPO IL TEST -->
+        <div style="background: yellow; padding: 15px; color: black; border: 2px solid red; margin: 10px 0;">
+            <h3 style="color: red; margin: 0 0 10px 0;">🔍 DEBUG TEMPLATE PLAYLIST:</h3>
+            <p style="margin: 5px 0;"><strong>Playlist count:</strong> <span th:text="${#lists.size(playlists)}">0</span></p>
+            <p style="margin: 5px 0;"><strong>Playlists null?</strong> <span th:text="${playlists == null}">false</span></p>
+            <p style="margin: 5px 0;"><strong>Playlists empty?</strong> <span th:text="${#lists.isEmpty(playlists)}">false</span></p>
+            <p style="margin: 5px 0;"><strong>Condition result:</strong> <span th:text="${not #lists.isEmpty(playlists)}">false</span></p>
+        </div>
+        <!-- FINE DEBUG TEMPORANEO -->
+        
         <!-- Messaggio di successo -->
         <div th:if="${successMessage != null}" class="success-message">
             <p th:text="${successMessage}"></p>
@@ -31,7 +41,8 @@
                     <h2>Your Playlists</h2>
                 </div>
                 
-                <div class="playlist-grid" th:if="${not #lists.isEmpty(playlists)}">
+                <!-- DEBUG: Rimossa temporaneamente la condizione th:if per vedere le playlist -->
+                <div class="playlist-grid">
                     <div class="playlist-card" th:each="playlist : ${playlists}">
                         <div class="playlist-title">
                             <a th:href="@{/GoToPlaylistPage(playlistId=${playlist.ID})}" th:text="${playlist.name}"></a>
@@ -41,6 +52,11 @@
                             <a th:href="@{#}" th:onclick="'openReorderModal(' + ${playlist.ID} + ');'" class="btn-secondary">Reorder</a>
                         </div>
                     </div>
+                </div>
+                
+                <!-- DEBUG: Messaggio alternativo sempre visibile -->
+                <div style="background: lightblue; padding: 10px; margin: 10px 0;">
+                    <p>🔍 DEBUG: Se non vedi playlist sopra ma il count è > 0, c'è un problema nel loop th:each</p>
                 </div>
                 
                 <p th:if="${#lists.isEmpty(playlists)}">You don't have any playlists yet. Create one below!</p>
@@ -147,35 +163,37 @@
                         <h2>Create a New Playlist</h2>
                     </div>
                     
-                    <!-- Mostra errore generale se presente -->
+                    <!-- Mostra errore generale se presente - CHIAVE AGGIORNATA -->
                     <div th:if="${playlistErrorMessages != null and playlistErrorMessages.containsKey('generalError')}" 
                          class="error-message error-general">
                         <p th:text="${playlistErrorMessages.get('generalError')}"></p>
                     </div>
                     
-                    <form th:action="@{/CreatePlaylist}" method="POST">
+                    <form th:action="@{/CreatePlaylist}" method="POST">                        
                         <div class="form-group">
                             <label for="playlistName">Playlist Title</label>
                             <input type="text" id="playlistName" name="playlistName" 
-                                   th:value="${playlistFormValues != null and playlistFormValues.containsKey('playlistName') ? playlistFormValues.get('playlistName') : ''}"
-                                   th:class="${playlistErrorMessages != null and playlistErrorMessages.containsKey('playlistNameError') ? 'form-field-error' : ''}"
+                                   th:value="${playlistFormValues != null and playlistFormValues.containsKey('name') ? playlistFormValues.get('name') : ''}"
+                                   th:class="${playlistErrorMessages != null and playlistErrorMessages.containsKey('nameError') ? 'form-field-error' : ''}"
                                    required>
-                            <div th:if="${playlistErrorMessages != null and playlistErrorMessages.containsKey('playlistNameError')}" 
-                                 class="error-message" th:text="${playlistErrorMessages.get('playlistNameError')}"></div>
+                            <!-- CHIAVE AGGIORNATA: nameError invece di playlistNameError -->
+                            <div th:if="${playlistErrorMessages != null and playlistErrorMessages.containsKey('nameError')}" 
+                                 class="error-message" th:text="${playlistErrorMessages.get('nameError')}"></div>
                         </div>
                         
                         <div class="form-group">
                             <label for="selectedSongs">Select Songs</label>
                             <select id="selectedSongs" name="selectedSongs" multiple required
-                                    th:class="${playlistErrorMessages != null and playlistErrorMessages.containsKey('selectedSongsError') ? 'form-field-error' : ''}">
+                                    th:class="${playlistErrorMessages != null and playlistErrorMessages.containsKey('songsError') ? 'form-field-error' : ''}">
                                 <option th:each="song : ${songs}" 
                                         th:value="${song.ID}" 
                                         th:text="${song.name + ' - ' + song.artistName + ' (' + song.albumName + ', ' + song.albumReleaseYear + ')'}">
                                 </option>
                             </select>
                             <small>Hold Ctrl (Cmd on Mac) to select multiple songs</small>
-                            <div th:if="${playlistErrorMessages != null and playlistErrorMessages.containsKey('selectedSongsError')}" 
-                                 class="error-message" th:text="${playlistErrorMessages.get('selectedSongsError')}"></div>
+                            <!-- CHIAVE AGGIORNATA: songsError invece di selectedSongsError -->
+                            <div th:if="${playlistErrorMessages != null and playlistErrorMessages.containsKey('songsError')}" 
+                                 class="error-message" th:text="${playlistErrorMessages.get('songsError')}"></div>
                         </div>
                         
                         <button type="submit">Create Playlist</button>

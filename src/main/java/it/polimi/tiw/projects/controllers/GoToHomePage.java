@@ -11,7 +11,9 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.WebContext;
@@ -20,6 +22,7 @@ import org.thymeleaf.templateresolver.WebApplicationTemplateResolver;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
 
 import it.polimi.tiw.projects.utils.ConnectionHandler;
+import it.polimi.tiw.projects.utils.FlashMessagesManager;
 import it.polimi.tiw.projects.dao.GenreDAO;
 import it.polimi.tiw.projects.dao.SongDAO;
 import it.polimi.tiw.projects.dao.PlaylistDAO;
@@ -47,6 +50,7 @@ public class GoToHomePage extends HttpServlet {
 		templateResolver.setSuffix(".html");
 		connection = ConnectionHandler.getConnection(getServletContext());
 	}
+    
     
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException{
     	// If the user is not logged in (not present in session) redirect to the login
@@ -95,35 +99,73 @@ public class GoToHomePage extends HttpServlet {
     	ctx.setVariable("genres", genres);
     	ctx.setVariable("songs", songs);
     	
-    	// Aggiungi eventuali messaggi di errore e valori del form
-    	// Questi attributi saranno presenti solo quando arriviamo da un forward
-    	// dopo un tentativo fallito di upload o creazione playlist
+    	// PATTERN POST-REDIRECT-GET: Leggi i flash messages dalla sessione
     	
-    	// Errori del form di upload canzone
-    	if (request.getAttribute("errorMessages") != null) {
-    	    ctx.setVariable("errorMessages", request.getAttribute("errorMessages"));
+    	// === MESSAGGI DI SUCCESSO ===
+    	List<String> successMessages = FlashMessagesManager.getAndClearSuccessMessages(request);
+    	if (!successMessages.isEmpty()) {
+    	    // Per compatibilità con template esistente, usa il primo messaggio
+    	    ctx.setVariable("successMessage", successMessages.get(0));
     	}
     	
-    	// Valori del form di upload canzone
-    	if (request.getAttribute("formValues") != null) {
-    	    ctx.setVariable("formValues", request.getAttribute("formValues"));
+    	// === PLAYLIST FLASH MESSAGES ===
+    	// Recupera e rimuove gli errori strutturati per campo (mantiene UX originale)
+    	Map<String, String> allFieldErrors = FlashMessagesManager.getAndClearFieldErrors(request);
+    	Map<String, String> allFormValues = FlashMessagesManager.getAndClearFormValues(request);
+    	
+    	// Separa errori playlist da errori upload
+    	Map<String, String> playlistFieldErrors = new HashMap<>();
+    	Map<String, String> playlistFormValues = new HashMap<>();
+    	Map<String, String> uploadFieldErrors = new HashMap<>();
+    	Map<String, String> uploadFormValues = new HashMap<>();
+    	
+    	// Filtra errori e valori per tipo usando prefissi sistematici
+    	for (Map.Entry<String, String> entry : allFieldErrors.entrySet()) {
+    	    if (entry.getKey().startsWith("upload_")) {
+    	        // Rimuovi prefisso "upload_" per compatibilità template
+    	        String cleanKey = entry.getKey().substring(7); // rimuove "upload_"
+    	        uploadFieldErrors.put(cleanKey, entry.getValue());
+    	    } else if (entry.getKey().startsWith("playlist_")) {
+    	        // Rimuovi prefisso "playlist_" per compatibilità template
+    	        String cleanKey = entry.getKey().substring(9); // rimuove "playlist_"
+    	        playlistFieldErrors.put(cleanKey, entry.getValue());
+    	    } else {
+    	        // Errori senza prefisso (legacy) - tratta come playlist per retrocompatibilità
+    	        playlistFieldErrors.put(entry.getKey(), entry.getValue());
+    	    }
     	}
     	
-    	// Errori del form di creazione playlist
-    	if (request.getAttribute("playlistErrorMessages") != null) {
-    	    ctx.setVariable("playlistErrorMessages", request.getAttribute("playlistErrorMessages"));
+    	for (Map.Entry<String, String> entry : allFormValues.entrySet()) {
+    	    if (entry.getKey().startsWith("upload_")) {
+    	        // Rimuovi prefisso "upload_" per compatibilità template
+    	        String cleanKey = entry.getKey().substring(7); // rimuove "upload_"
+    	        uploadFormValues.put(cleanKey, entry.getValue());
+    	    } else if (entry.getKey().startsWith("playlist_")) {
+    	        // Rimuovi prefisso "playlist_" per compatibilità template
+    	        String cleanKey = entry.getKey().substring(9); // rimuove "playlist_"
+    	        playlistFormValues.put(cleanKey, entry.getValue());
+    	    } else {
+    	        // Valori senza prefisso (legacy) - tratta come playlist per retrocompatibilità
+    	        playlistFormValues.put(entry.getKey(), entry.getValue());
+    	    }
     	}
     	
-    	// Valori del form di creazione playlist
-    	if (request.getAttribute("playlistFormValues") != null) {
-    	    ctx.setVariable("playlistFormValues", request.getAttribute("playlistFormValues"));
+    	// Imposta variabili per playlist
+    	if (!playlistFieldErrors.isEmpty()) {
+    	    ctx.setVariable("playlistErrorMessages", playlistFieldErrors);
+    	}
+    	if (!playlistFormValues.isEmpty()) {
+    	    ctx.setVariable("playlistFormValues", playlistFormValues);
     	}
     	
-    	// Messaggio di successo (vale per entrambi i form)
-    	if (request.getAttribute("successMessage") != null) {
-    	    ctx.setVariable("successMessage", request.getAttribute("successMessage"));
+    	// Imposta variabili per upload (compatibilità template esistente)
+    	if (!uploadFieldErrors.isEmpty()) {
+    	    ctx.setVariable("errorMessages", uploadFieldErrors);
     	}
-		
+    	if (!uploadFormValues.isEmpty()) {
+    	    ctx.setVariable("formValues", uploadFormValues);
+    	}
+    	
     	templateEngine.process(path, ctx, response.getWriter());
     }
     

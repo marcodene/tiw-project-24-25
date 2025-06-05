@@ -28,6 +28,8 @@ import it.polimi.tiw.projects.dao.GenreDAO;
 import it.polimi.tiw.projects.dao.SongDAO;
 import it.polimi.tiw.projects.utils.ConnectionHandler;
 import it.polimi.tiw.projects.utils.FileStorageManager;
+import it.polimi.tiw.projects.utils.FlashMessagesManager;
+
 
 @MultipartConfig
 @WebServlet("/UploadSong")
@@ -85,7 +87,9 @@ public class UploadSong extends HttpServlet {
 		try {
 			// Validazione del nome della canzone
 			songName = StringEscapeUtils.escapeJava(request.getParameter("songName"));
-			formValues.put("songName", songName);
+			if (songName != null && !songName.trim().isEmpty()) {
+				formValues.put("songName", songName);
+			}
 			if (songName == null || songName.trim().isEmpty()) {
 				errorMessages.put("nameError", "Il titolo della canzone è obbligatorio");
 				hasErrors = true;
@@ -93,7 +97,9 @@ public class UploadSong extends HttpServlet {
 			
 			// Validazione del nome dell'album
 			albumName = StringEscapeUtils.escapeJava(request.getParameter("albumName"));
-			formValues.put("albumName", albumName);
+			if (albumName != null && !albumName.trim().isEmpty()) {
+				formValues.put("albumName", albumName);
+			}
 			if (albumName == null || albumName.trim().isEmpty()) {
 				errorMessages.put("albumError", "Il titolo dell'album è obbligatorio");
 				hasErrors = true;
@@ -101,7 +107,9 @@ public class UploadSong extends HttpServlet {
 			
 			// Validazione del nome dell'artista
 			artistName = StringEscapeUtils.escapeJava(request.getParameter("artistName"));
-			formValues.put("artistName", artistName);
+			if (artistName != null && !artistName.trim().isEmpty()) {
+				formValues.put("artistName", artistName);
+			}
 			if (artistName == null || artistName.trim().isEmpty()) {
 				errorMessages.put("artistError", "Il nome dell'artista è obbligatorio");
 				hasErrors = true;
@@ -130,7 +138,9 @@ public class UploadSong extends HttpServlet {
 			
 			// Validazione del genere musicale
 			genre = StringEscapeUtils.escapeJava(request.getParameter("genre"));
-			formValues.put("genre", genre);
+			if (genre != null && !genre.trim().isEmpty()) {
+				formValues.put("genre", genre);
+			}
 			if (genre == null || genre.trim().isEmpty()) {
 				errorMessages.put("genreError", "Il genere musicale è obbligatorio");
 				hasErrors = true;
@@ -167,7 +177,7 @@ public class UploadSong extends HttpServlet {
             
             try {
             	// Verifica genere musicale valido
-            	if(!genreDAO.existsGenreByName(genre)) {
+            	if(!hasErrors && !genreDAO.existsGenreByName(genre)) {
             		errorMessages.put("genreError", "Il genere musicale selezionato non è valido");
             		hasErrors = true;
             	}
@@ -177,7 +187,7 @@ public class UploadSong extends HttpServlet {
             	    genreId = genreDAO.getGenreIdByName(genre);
             	}
             	
-            	if(genreId > 0 && songDAO.existsSongWithSameData(songName, albumName, artistName, 
+            	if(!hasErrors && genreId > 0 && songDAO.existsSongWithSameData(songName, albumName, artistName, 
             	        albumReleaseYear, genreId, user.getId())) {
             	    errorMessages.put("generalError", "Esiste già una canzone identica con questi dati");
             	    hasErrors = true;
@@ -215,7 +225,7 @@ public class UploadSong extends HttpServlet {
             	    } else {
             	        // Upload completato con successo
             	        successMessage = "Canzone '" + songName + "' caricata con successo!";
-            	        // Pulisci i valori del form dopo il successo
+            	        // Non manteniamo i valori del form dopo il successo con redirect
             	        formValues.clear();
             	    }
             	}
@@ -234,19 +244,39 @@ public class UploadSong extends HttpServlet {
 			e.printStackTrace();
 		}
 		
-		// Aggiungiamo gli errori e i valori come attributi della request (non della sessione)
-		if (!errorMessages.isEmpty()) {
-		    request.setAttribute("errorMessages", errorMessages);
-		}
-		if (!formValues.isEmpty()) {
-		    request.setAttribute("formValues", formValues);
-		}
+		// PATTERN POST-REDIRECT-GET: Manteniamo l'UX originale per upload
+		
+		// Aggiungi messaggio di successo come flash message
 		if (successMessage != null) {
-		    request.setAttribute("successMessage", successMessage);
+		    FlashMessagesManager.addSuccessMessage(request, successMessage);
 		}
 		
-		// Forward alla servlet GoToHomePage
-		request.getRequestDispatcher("/Home").forward(request, response);
+		// Aggiungi errori strutturati per campo (per mantenere UX originale)
+		if (!errorMessages.isEmpty()) {
+		    // Cancella eventuali file caricati se ci sono errori
+		    deleteUploadedFiles(albumCoverPath, songFilePath);
+		    
+		    // Usa chiavi specifiche per distinguere errori upload da errori playlist
+		    Map<String, String> uploadErrors = new HashMap<>();
+		    for (Map.Entry<String, String> error : errorMessages.entrySet()) {
+		        uploadErrors.put("upload_" + error.getKey(), error.getValue());
+		    }
+		    FlashMessagesManager.addFieldErrors(request, uploadErrors);
+		}
+		
+		// Aggiungi valori del form (solo se ci sono errori, per ri-popolare i campi)
+		// NOTA: I file non possono essere ripopolati per motivi di sicurezza browser
+		if (hasErrors && !formValues.isEmpty()) {
+		    Map<String, String> uploadValues = new HashMap<>();
+		    for (Map.Entry<String, String> value : formValues.entrySet()) {
+		        uploadValues.put("upload_" + value.getKey(), value.getValue());
+		    }
+		    FlashMessagesManager.addFormValues(request, uploadValues);
+		}
+		
+		// REDIRECT invece di forward - questo elimina le duplicazioni!
+		String homePath = getServletContext().getContextPath() + "/Home";
+		response.sendRedirect(homePath);
 	}
 
 	// Unique file's name generator
