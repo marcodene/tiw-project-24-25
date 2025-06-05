@@ -263,39 +263,50 @@ public class PlaylistDAO {
 	}
 	
 	public boolean addSongsToPlaylist(int playlistId, int[] songIDs, int userId) throws SQLException {
-	    // This method might need to consider custom order if songs are added to an ordered playlist.
-        // For now, new songs are added without specific order, or to the end if custom order is maintained.
-        // The requirement states: "When si aggiunge un brano a una playlist con ordine personalizzato
-        // Il nuovo brano viene inserito in ULTIMA posizione"
-        // This implies PlaylistSong.customOrder needs to be managed.
-        
-        boolean originalAutoCommit = connection.getAutoCommit();
+	    boolean originalAutoCommit = connection.getAutoCommit();
 	    try {
 	        connection.setAutoCommit(false);
-            SongDAO songDAO = new SongDAO(connection); // For validation
+	        SongDAO songDAO = new SongDAO(connection);
 
-            // Get current max order for this playlist
-            int maxOrder = 0;
-            String maxOrderQuery = "SELECT MAX(customOrder) FROM PlaylistSong WHERE playlistID = ?";
-            try (PreparedStatement pstatement = connection.prepareStatement(maxOrderQuery)) {
-                pstatement.setInt(1, playlistId);
-                try (ResultSet rs = pstatement.executeQuery()) {
-                    if (rs.next()) {
-                        maxOrder = rs.getInt(1); // This will be 0 if no custom orders or no songs
-                    }
-                }
-            }
+	        // Controlla se la playlist ha già un ordine personalizzato
+	        List<Integer> existingOrder = getCustomSongOrder(playlistId);
+	        boolean hasCustomOrder = (existingOrder != null && !existingOrder.isEmpty());
+	        
+	        // Se non c'è un ordine personalizzato, non impostare customOrder
+	        if (!hasCustomOrder) {
+	            // Aggiungi le canzoni senza customOrder
+	            for (int songID : songIDs) {
+	                if (!songDAO.songBelongsToUser(songID, userId)) {
+	                    throw new SQLException("Song ID " + songID + " does not belong to user " + userId);
+	                }
+	                if (!isSongInPlaylist(playlistId, songID)) {
+	                    addSongToPlaylistAssociation(playlistId, songID); // Usa il metodo senza order
+	                }
+	            }
+	        } else {
+	            // Se c'è già un ordine personalizzato, calcola il maxOrder
+	            int maxOrder = 0;
+	            String maxOrderQuery = "SELECT MAX(customOrder) FROM PlaylistSong WHERE playlistID = ?";
+	            try (PreparedStatement pstatement = connection.prepareStatement(maxOrderQuery)) {
+	                pstatement.setInt(1, playlistId);
+	                try (ResultSet rs = pstatement.executeQuery()) {
+	                    if (rs.next()) {
+	                        maxOrder = rs.getInt(1);
+	                    }
+	                }
+	            }
 
-	        for (int songID : songIDs) {
-                if (!songDAO.songBelongsToUser(songID, userId)) {
-                    throw new SQLException("Song ID " + songID + " does not belong to user " + userId);
-                }
-	            if (!isSongInPlaylist(playlistId, songID)) {
-                    // Add with new order index
-                    maxOrder++;
-	                addSongToPlaylistAssociationWithOrder(playlistId, songID, maxOrder);
+	            for (int songID : songIDs) {
+	                if (!songDAO.songBelongsToUser(songID, userId)) {
+	                    throw new SQLException("Song ID " + songID + " does not belong to user " + userId);
+	                }
+	                if (!isSongInPlaylist(playlistId, songID)) {
+	                    maxOrder++;
+	                    addSongToPlaylistAssociationWithOrder(playlistId, songID, maxOrder);
+	                }
 	            }
 	        }
+	        
 	        connection.commit();
 	        return true;
 	    } catch (SQLException e) {

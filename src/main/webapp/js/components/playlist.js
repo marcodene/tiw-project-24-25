@@ -4,53 +4,53 @@ const PlaylistComponent = (() => {
     let currentPage = 1;
     const songsPerPage = 5;
 
-    const renderDetails = (appContainer, playlist) => {
-        container = appContainer;
-        container.innerHTML = ''; // Clear previous content
-        currentPlaylistObj = playlist;
-        currentPage = 1; // Reset to first page whenever a new playlist is rendered
+	const renderDetails = (appContainer, playlist) => {
+	    container = appContainer;
+	    container.innerHTML = ''; // Clear previous content
+	    currentPage = 1; // Reset to first page
+	    
+	    // Mostra un loading mentre carica i dettagli
+	    container.innerHTML = '<p>Caricamento playlist...</p>';
+	    
+	    // RICHIESTA GET PER I DETTAGLI COMPLETI DELLA PLAYLIST
+	    makeCall('GET', `/api/playlists/${playlist.ID}`, null, (req) => {
+	        if (req.readyState === XMLHttpRequest.DONE) {
+	            if (req.status === 200) {
+	                const response = JSON.parse(req.responseText);
+	                if (response.status === 'success') {
+	                    // Ora abbiamo la playlist completa con tutte le canzoni
+	                    currentPlaylistObj = response.data;
+	                    State.setCurrentPlaylist(currentPlaylistObj);
+	                    
+	                    // Renderizza la vista completa
+	                    container.innerHTML = '';
+	                    
+	                    const header = document.createElement('h2');
+	                    header.textContent = `Playlist: ${currentPlaylistObj.name}`;
+	                    container.appendChild(header);
 
-        if (!currentPlaylistObj) {
-            container.innerHTML = '<p>No playlist selected or playlist data is missing.</p>';
-            // Optionally, navigate back to home or show a more specific error
-            // Router.navigateTo('home'); 
-            return;
-        }
-        
-        const header = document.createElement('h2');
-        header.textContent = `Playlist: ${currentPlaylistObj.name}`;
-        container.appendChild(header);
+	                    const backButton = document.createElement('button');
+	                    backButton.textContent = 'Back to Home';
+	                    backButton.addEventListener('click', () => Router.navigateTo('home'));
+	                    container.appendChild(backButton);
 
-        const backButton = document.createElement('button');
-        backButton.textContent = 'Back to Home';
-        backButton.addEventListener('click', () => Router.navigateTo('home'));
-        container.appendChild(backButton);
+	                    const songsDisplaySection = document.createElement('section');
+	                    songsDisplaySection.id = 'playlist-songs-display';
+	                    container.appendChild(songsDisplaySection);
 
-        const songsDisplaySection = document.createElement('section');
-        songsDisplaySection.id = 'playlist-songs-display';
-        container.appendChild(songsDisplaySection);
+	                    const addSongsSection = document.createElement('section');
+	                    addSongsSection.id = 'playlist-add-songs';
+	                    container.appendChild(addSongsSection);
 
-        const addSongsSection = document.createElement('section');
-        addSongsSection.id = 'playlist-add-songs';
-        container.appendChild(addSongsSection);
-
-        renderSongGrid(songsDisplaySection);
-        renderAddSongsForm(addSongsSection);
-
-        // Subscribe to changes in the current playlist to re-render song grid
-        // This handles cases like songs being added, or order changing.
-        State.subscribe('currentPlaylistChanged', (updatedPlaylist) => {
-            if (updatedPlaylist && currentPlaylistObj && updatedPlaylist.ID === currentPlaylistObj.ID) {
-                currentPlaylistObj = updatedPlaylist; // Update local copy
-                // currentPage = 1; // Reset to first page on any modification
-                renderSongGrid(songsDisplaySection); // Re-render songs
-                renderAddSongsForm(addSongsSection); // Re-render add songs form (available songs might change)
-            }
-        });
-         State.subscribe('songsChanged', () => { // If global songs list changes
-            renderAddSongsForm(addSongsSection);
-        });
-    };
+	                    renderSongGrid(songsDisplaySection);
+	                    renderAddSongsForm(addSongsSection);
+	                }
+	            } else {
+	                container.innerHTML = '<p>Errore nel caricamento della playlist</p>';
+	            }
+	        }
+	    });
+	};
 
     const renderSongGrid = (sectionElement) => {
         sectionElement.innerHTML = '<h3>Songs in this Playlist</h3>';
@@ -208,6 +208,25 @@ const PlaylistComponent = (() => {
         }, false); // Assuming makeCall can handle JSON if data is string and Content-Type is set by it
                    // Need to ensure makeCall sets Content-Type for JSON string.
     };
+	
+	// Sottoscrizione per quando la playlist corrente viene modificata
+    State.subscribe('currentPlaylistChanged', (updatedPlaylist) => {
+        if (updatedPlaylist && currentPlaylistObj && updatedPlaylist.ID === currentPlaylistObj.ID) {
+            currentPlaylistObj = updatedPlaylist;
+            const songsDisplay = document.getElementById('playlist-songs-display');
+            const addSongs = document.getElementById('playlist-add-songs');
+            if (songsDisplay) renderSongGrid(songsDisplay);
+            if (addSongs) renderAddSongsForm(addSongs);
+        }
+    });
+
+    // Sottoscrizione per quando la lista globale delle canzoni cambia
+    State.subscribe('songsChanged', () => {
+        const addSongs = document.getElementById('playlist-add-songs');
+        if (addSongs && currentPlaylistObj) {
+            renderAddSongsForm(addSongs);
+        }
+    });
     
     return {
         renderDetails
