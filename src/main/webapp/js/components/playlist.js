@@ -3,6 +3,10 @@ const PlaylistComponent = (() => {
     let currentPlaylistObj; // Stores the playlist object passed by the router
     let currentPage = 1;
     const songsPerPage = 5;
+	
+	const validatePageNumber = (page, totalPages) => {
+	        return Number.isInteger(page) && page >= 1 && page <= Math.max(1, totalPages);
+	    };
 
 	const renderDetails = (appContainer, playlist) => {
 	    container = appContainer;
@@ -95,43 +99,49 @@ const PlaylistComponent = (() => {
         renderPaginationControls(sectionElement, totalPages);
     };
 
-    const renderPaginationControls = (sectionElement, totalPages) => {
-        const existingControls = sectionElement.querySelector('.pagination-controls');
-        if(existingControls) existingControls.remove();
+	const renderPaginationControls = (sectionElement, totalPages) => {
+	    const existingControls = sectionElement.querySelector('.pagination-controls');
+	    if(existingControls) existingControls.remove();
 
-        if (totalPages <= 1) return;
+	    // Do not show control buttons if only one page
+	    if (totalPages <= 1) return; // early exit
 
-        const controls = document.createElement('div');
-        controls.className = 'pagination-controls';
+	    const controls = document.createElement('div');
+	    controls.className = 'pagination-controls';
 
-        const prevButton = document.createElement('button');
-        prevButton.textContent = 'Previous';
-        prevButton.disabled = currentPage === 1;
-        prevButton.addEventListener('click', () => {
-            if (currentPage > 1) {
-                currentPage--;
-                renderSongGrid(sectionElement.querySelector('#playlist-songs-display') || sectionElement);
-            }
-        });
+	    // Created only if it's not first page
+	    if (currentPage > 1) {
+	        const prevButton = document.createElement('button');
+	        prevButton.textContent = 'Previous';
+	        prevButton.addEventListener('click', () => {
+	            if (currentPage > 1 && validatePageNumber(currentPage - 1, totalPages)) {
+	                currentPage--;
+	                renderSongGrid(sectionElement.querySelector('#playlist-songs-display') || sectionElement);
+	            }
+	        });
+	        controls.appendChild(prevButton);
+	    }
 
-        const nextButton = document.createElement('button');
-        nextButton.textContent = 'Next';
-        nextButton.disabled = currentPage === totalPages;
-        nextButton.addEventListener('click', () => {
-            if (currentPage < totalPages) {
-                currentPage++;
-                renderSongGrid(sectionElement.querySelector('#playlist-songs-display') || sectionElement);
-            }
-        });
-        
-        const pageInfo = document.createElement('span');
-        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+	    // Page info (always present)
+	    const pageInfo = document.createElement('span');
+	    pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+	    controls.appendChild(pageInfo);
 
-        controls.appendChild(prevButton);
-        controls.appendChild(pageInfo);
-        controls.appendChild(nextButton);
-        sectionElement.appendChild(controls);
-    };
+	    //  Created only if it's not last page
+	    if (currentPage < totalPages) {
+	        const nextButton = document.createElement('button');
+	        nextButton.textContent = 'Next';
+	        nextButton.addEventListener('click', () => {
+	            if (currentPage < totalPages && validatePageNumber(currentPage + 1, totalPages)) {
+	                currentPage++;
+	                renderSongGrid(sectionElement.querySelector('#playlist-songs-display') || sectionElement);
+	            }
+	        });
+	        controls.appendChild(nextButton); 
+	    }
+
+	    sectionElement.appendChild(controls);
+	};
     
     const renderAddSongsForm = (sectionElement) => {
         sectionElement.innerHTML = '<h3>Add More Songs</h3>';
