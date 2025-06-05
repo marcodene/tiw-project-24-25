@@ -4,94 +4,101 @@ const ReorderComponent = (() => {
     let currentPlaylistForReorder;
     let draggedItem = null;
 
-    const createModal = () => {
-        if (document.getElementById('reorderPlaylistModal')) return;
+	const createModal = () => {
+	    if (document.getElementById('reorderPlaylistModal')) return;
 
-        modalElement = document.createElement('div');
-        modalElement.id = 'reorderPlaylistModal';
-        modalElement.className = 'modal'; // For CSS styling
-        modalElement.style.display = 'none'; // Hidden by default
-        // Basic modal styling (can be moved to CSS)
-        modalElement.style.position = 'fixed';
-        modalElement.style.zIndex = '1000';
-        modalElement.style.left = '0';
-        modalElement.style.top = '0';
-        modalElement.style.width = '100%';
-        modalElement.style.height = '100%';
-        modalElement.style.overflow = 'auto';
-        modalElement.style.backgroundColor = 'rgba(0,0,0,0.4)';
+	    modalElement = document.createElement('div');
+	    modalElement.id = 'reorderPlaylistModal';
+	    modalElement.className = 'modal'; // Solo classe CSS, nessuno stile inline
+	    modalElement.style.display = 'none'; // Solo questa proprietà inline per nascondere/mostrare
 
-        const modalContent = document.createElement('div');
-        modalContent.className = 'modal-content';
-        modalContent.style.backgroundColor = '#fefefe';
-        modalContent.style.margin = '10% auto';
-        modalContent.style.padding = '20px';
-        modalContent.style.border = '1px solid #888';
-        modalContent.style.width = '60%';
-        modalContent.style.minHeight = '300px';
+	    const modalContent = document.createElement('div');
+	    modalContent.className = 'modal-content'; // Solo classe CSS
 
+	    const closeButton = document.createElement('span');
+	    closeButton.className = 'close-button';
+	    closeButton.innerHTML = '&times;'; // "x" character
+	    closeButton.onclick = closeModal;
 
-        const closeButton = document.createElement('span');
-        closeButton.className = 'close-button';
-        closeButton.innerHTML = '&times;'; // "x" character
-        closeButton.style.color = '#aaa';
-        closeButton.style.float = 'right';
-        closeButton.style.fontSize = '28px';
-        closeButton.style.fontWeight = 'bold';
-        closeButton.style.cursor = 'pointer';
-        closeButton.onclick = closeModal;
+	    const title = document.createElement('h3');
+	    title.id = 'reorderModalTitle';
+	    title.textContent = 'Riordino Playlist';
 
-        const title = document.createElement('h3');
-        title.id = 'reorderModalTitle';
-        title.textContent = 'Riordino Playlist';
+	    playlistToListElement = document.createElement('ul');
+	    playlistToListElement.id = 'reorderPlaylistSongList';
+	    // Rimuovi tutti gli stili inline - saranno gestiti dal CSS
 
-        playlistToListElement = document.createElement('ul');
-        playlistToListElement.id = 'reorderPlaylistSongList';
-        playlistToListElement.style.listStyleType = 'none';
-        playlistToListElement.style.padding = '0';
-        // Styles for drag-and-drop feedback can be added here or via CSS
+	    const saveButton = document.createElement('button');
+	    saveButton.textContent = 'Salva Ordinamento';
+	    saveButton.onclick = handleSaveOrder;
 
-        const saveButton = document.createElement('button');
-        saveButton.textContent = 'Salva Ordinamento';
-        saveButton.onclick = handleSaveOrder;
-        saveButton.style.marginRight = '10px';
+	    const cancelButton = document.createElement('button');
+	    cancelButton.textContent = 'Annulla';
+	    cancelButton.onclick = closeModal;
+	    
+	    const messageArea = document.createElement('div');
+	    messageArea.id = 'reorderMessageArea';
+	    messageArea.className = 'message-area';
 
-        const cancelButton = document.createElement('button');
-        cancelButton.textContent = 'Annulla';
-        cancelButton.onclick = closeModal;
-        
-        const messageArea = document.createElement('div');
-        messageArea.id = 'reorderMessageArea';
-        messageArea.className = 'message-area';
+	    modalContent.appendChild(closeButton);
+	    modalContent.appendChild(title);
+	    modalContent.appendChild(playlistToListElement);
+	    modalContent.appendChild(saveButton);
+	    modalContent.appendChild(cancelButton);
+	    modalContent.appendChild(messageArea);
+	    modalElement.appendChild(modalContent);
+	    document.body.appendChild(modalElement);
 
-        modalContent.appendChild(closeButton);
-        modalContent.appendChild(title);
-        modalContent.appendChild(playlistToListElement);
-        modalContent.appendChild(saveButton);
-        modalContent.appendChild(cancelButton);
-        modalContent.appendChild(messageArea);
-        modalElement.appendChild(modalContent);
-        document.body.appendChild(modalElement);
+	    // Drag and Drop event listeners per il container
+	    playlistToListElement.addEventListener('dragover', handleDragOver);
+	    playlistToListElement.addEventListener('drop', handleDrop);
+	};
 
-        // Drag and Drop event listeners for the list container
-        playlistToListElement.addEventListener('dragover', handleDragOver);
-        playlistToListElement.addEventListener('drop', handleDrop);
-    };
+	const showModal = (playlist) => {
+	    if (!modalElement) createModal();
+	    currentPlaylistForReorder = playlist;
+	    document.getElementById('reorderModalTitle').textContent = `Riordino: ${playlist.name}`;
+	    
+	    // Mostra messaggio di caricamento
+	    const messageArea = document.getElementById('reorderMessageArea');
+	    messageArea.textContent = 'Caricamento dettagli playlist...';
+	    messageArea.className = 'message-area';
 
-    const showModal = (playlist) => {
-        if (!modalElement) createModal();
-        currentPlaylistForReorder = playlist;
-        document.getElementById('reorderModalTitle').textContent = `Riordino: ${playlist.name}`;
-        document.getElementById('reorderMessageArea').textContent = '';
+	    // Fetch detailed playlist information including songs
+	    makeCall('GET', `/api/playlists/${playlist.ID}`, null, (req) => {
+	        if (req.readyState === XMLHttpRequest.DONE) {
+	            if (req.status === 200) {
+	                try {
+	                    const response = JSON.parse(req.responseText);
+	                    if (response.status === 'success') {
+	                        // Aggiorna currentPlaylistForReorder con i dati completi incluse le canzoni
+	                        currentPlaylistForReorder = response.data;
+	                        
+	                        // Renderizza la lista delle canzoni ora che abbiamo i dati completi
+	                        renderSongListForReorder([...response.data.songs]);
+	                        
+	                        // Pulisce il messaggio di caricamento
+	                        messageArea.textContent = '';
+	                        messageArea.className = 'message-area';
+	                    } else {
+	                        messageArea.textContent = `Errore: ${response.message || 'Impossibile caricare i dettagli della playlist.'}`;
+	                        messageArea.className = 'message-area error';
+	                    }
+	                } catch (e) {
+	                    messageArea.textContent = 'Errore nella elaborazione della risposta del server.';
+	                    messageArea.className = 'message-area error';
+	                }
+	            } else {
+	                messageArea.textContent = `Errore nel caricamento della playlist (Status: ${req.status}).`;
+	                messageArea.className = 'message-area error';
+	            }
+	        }
+	    });
 
-
-        // Songs in playlist.songs should be pre-ordered by DAO (custom or default)
-        const songsToDisplay = [...playlist.songs]; // Create a mutable copy for reordering
-
-        renderSongListForReorder(songsToDisplay);
-        modalElement.style.display = 'block';
-    };
-
+	    // Mostra il modal immediatamente (con il messaggio di caricamento)
+	    modalElement.style.display = 'block';
+	};
+	
     const closeModal = () => {
         if (modalElement) {
             modalElement.style.display = 'none';
@@ -101,26 +108,20 @@ const ReorderComponent = (() => {
         draggedItem = null;
     };
 
-    const renderSongListForReorder = (songs) => {
-        playlistToListElement.innerHTML = ''; // Clear previous items
-        songs.forEach((song, index) => {
-            const li = document.createElement('li');
-            li.textContent = `${song.name} - ${song.artistName}`;
-            li.setAttribute('data-song-id', song.ID);
-            li.setAttribute('draggable', true);
-            li.style.padding = '8px';
-            li.style.margin = '4px 0';
-            li.style.border = '1px solid #ddd';
-            li.style.cursor = 'grab';
-            li.style.backgroundColor = '#f9f9f9';
+	const renderSongListForReorder = (songs) => {
+	    playlistToListElement.innerHTML = ''; // Clear previous items
+	    songs.forEach((song, index) => {
+	        const li = document.createElement('li');
+	        li.textContent = `${song.name} - ${song.artistName}`;
+	        li.setAttribute('data-song-id', song.ID);
+	        li.setAttribute('draggable', true);
 
-            // Drag and Drop event listeners for each item
-            li.addEventListener('dragstart', handleDragStart);
-            // 'dragend' could be used for cleanup if needed, but not essential here
-            
-            playlistToListElement.appendChild(li);
-        });
-    };
+	        // Drag and Drop event listeners for each item
+	        li.addEventListener('dragstart', handleDragStart);
+	        
+	        playlistToListElement.appendChild(li);
+	    });
+	};
 
     // --- Drag and Drop Handlers ---
     const handleDragStart = (e) => {
@@ -129,7 +130,7 @@ const ReorderComponent = (() => {
         e.dataTransfer.setData('text/plain', null); // Necessary for Firefox
         // Optionally, add a class to the dragged item for styling
         draggedItem.classList.add('dragging'); 
-    };
+    }; 
 
     const handleDragOver = (e) => {
         e.preventDefault(); // Necessary to allow dropping

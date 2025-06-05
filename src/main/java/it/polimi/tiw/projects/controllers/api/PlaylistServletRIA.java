@@ -241,7 +241,7 @@ public class PlaylistServletRIA extends HttpServlet {
         }
         
         List<Double> songIdDoubles = payload.get("songIDs");
-        if (songIdDoubles == null) { // Empty list might be valid if clearing order, but spec implies sending new order
+        if (songIdDoubles == null) { 
             sendError(response, HttpServletResponse.SC_BAD_REQUEST, "songIDs array is required in payload.");
             return;
         }

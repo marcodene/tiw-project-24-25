@@ -404,7 +404,7 @@ public class PlaylistDAO {
 
             // Update customOrder for each song in the playlist
             // This assumes all songs in songIdsInOrder are already in the playlist.
-            // A more robust version might clear existing order or handle songs not in list.
+            //TODO A more robust version might clear existing order or handle songs not in list.
             String updateQuery = "UPDATE PlaylistSong SET customOrder = ? WHERE playlistID = ? AND songID = ?";
             try (PreparedStatement pstatement = connection.prepareStatement(updateQuery)) {
                 for (int i = 0; i < songIdsInOrder.size(); i++) {
@@ -416,6 +416,7 @@ public class PlaylistDAO {
                 pstatement.executeBatch();
             }
             
+            //TODO da aggiustare
             // Set customOrder to NULL for any songs in this playlist but NOT in the new order (optional, depends on desired behavior)
             // For now, we only update the songs provided in the list.
 
