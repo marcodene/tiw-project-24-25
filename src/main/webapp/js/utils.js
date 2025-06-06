@@ -1,5 +1,10 @@
 const baseURL = '/progetto-tiw-24-25-RIA2.0';
 
+/**
+ * Makes HTTP requests to the server with different data types support
+ * Called throughout the application for API communication
+ * Handles form data, JSON, and file uploads with proper content types
+ */
 function makeCall(method, url, data, cback, reset = true) {
     var req = new XMLHttpRequest();
     req.onreadystatechange = function() {
@@ -36,10 +41,10 @@ function makeCall(method, url, data, cback, reset = true) {
     } else if (data === null || typeof data === 'undefined') { // For GET or no body
         req.send();
 	} else if (data.tagName && data.tagName.toLowerCase() === 'form') {
-        // Form HTML - usa application/x-www-form-urlencoded
+        // Form HTML - uses application/x-www-form-urlencoded
         req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         
-        // Converti i campi del form in una stringa URL-encoded
+        // Convert form fields to URL-encoded string
         const params = new URLSearchParams();
         for (let i = 0; i < data.elements.length; i++) {
             const elem = data.elements[i];
@@ -78,6 +83,11 @@ function makeCall(method, url, data, cback, reset = true) {
 
 // Session Management Utility
 const SessionManager = {
+    /**
+     * Stores user data in sessionStorage
+     * Called by Auth module during login/registration to persist user session
+     * Serializes user object to JSON and handles storage errors
+     */
     setUser(userData) {
         try {
             sessionStorage.setItem('user', JSON.stringify(userData));
@@ -87,6 +97,11 @@ const SessionManager = {
         }
     },
 
+    /**
+     * Retrieves user data from sessionStorage
+     * Called by State.getCurrentUser() and Auth module to check existing sessions
+     * Parses JSON data and handles corrupted data by clearing session
+     */
     getUser() {
         try {
             const stored = sessionStorage.getItem('user');
@@ -98,11 +113,21 @@ const SessionManager = {
         }
     },
 
+    /**
+     * Removes user data from sessionStorage
+     * Called during logout process to clear user session
+     * Ensures clean logout by removing stored authentication data
+     */
     clearUser() {
         sessionStorage.removeItem('user');
         console.log('🗑️ User session cleared');
     },
 
+    /**
+     * Checks if stored user data is valid and complete
+     * Called to validate session before allowing access to protected features
+     * Returns true if user has required properties (username, id)
+     */
     hasValidUser() {
         const user = this.getUser();
         return user && user.username && user.id;

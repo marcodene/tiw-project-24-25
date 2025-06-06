@@ -4,29 +4,39 @@ const PlaylistComponent = (() => {
     let currentPage = 1;
     const songsPerPage = 5;
 	
+	/**
+	 * Validates if a page number is within valid range
+	 * Called by pagination controls to ensure page navigation is valid
+	 * Returns true if page is integer between 1 and totalPages
+	 */
 	const validatePageNumber = (page, totalPages) => {
 	        return Number.isInteger(page) && page >= 1 && page <= Math.max(1, totalPages);
 	    };
 
+	/**
+	 * Renders the complete playlist detail view with songs and forms
+	 * Called by Router when navigating to 'playlist' route
+	 * Fetches full playlist data from server and displays songs with pagination
+	 */
 	const renderDetails = (appContainer, playlist) => {
 	    container = appContainer;
 	    container.innerHTML = ''; // Clear previous content
 	    currentPage = 1; // Reset to first page
 	    
-	    // Mostra un loading mentre carica i dettagli
-	    container.innerHTML = '<p>Caricamento playlist...</p>';
+	    // Show loading while fetching details
+	    container.innerHTML = '<p>Loading playlist...</p>';
 	    
-	    // RICHIESTA GET PER I DETTAGLI COMPLETI DELLA PLAYLIST
+	    // GET REQUEST FOR COMPLETE PLAYLIST DETAILS
 	    makeCall('GET', `/api/playlists/${playlist.ID}`, null, (req) => {
 	        if (req.readyState === XMLHttpRequest.DONE) {
 	            if (req.status === 200) {
 	                const response = JSON.parse(req.responseText);
 	                if (response.status === 'success') {
-	                    // Ora abbiamo la playlist completa con tutte le canzoni
+	                    // Now we have the complete playlist with all songs
 	                    currentPlaylistObj = response.data;
 	                    State.setCurrentPlaylist(currentPlaylistObj);
 	                    
-	                    // Renderizza la vista completa
+	                    // Render the complete view
 	                    container.innerHTML = '';
 	                    
 	                    const header = document.createElement('h2');
@@ -50,12 +60,17 @@ const PlaylistComponent = (() => {
 	                    renderAddSongsForm(addSongsSection);
 	                }
 	            } else {
-	                container.innerHTML = '<p>Errore nel caricamento della playlist</p>';
+	                container.innerHTML = '<p>Error loading playlist</p>';
 	            }
 	        }
 	    });
 	};
 
+    /**
+     * Renders paginated grid of songs in the current playlist
+     * Called by renderDetails() and when pagination controls are used
+     * Displays song cards with cover images and handles click navigation to player
+     */
     const renderSongGrid = (sectionElement) => {
         sectionElement.innerHTML = '<h3>Songs in this Playlist</h3>';
 
@@ -99,6 +114,11 @@ const PlaylistComponent = (() => {
         renderPaginationControls(sectionElement, totalPages);
     };
 
+	/**
+	 * Renders pagination controls for navigating through songs
+	 * Called by renderSongGrid() when there are multiple pages of songs
+	 * Creates previous/next buttons and page information display
+	 */
 	const renderPaginationControls = (sectionElement, totalPages) => {
 	    const existingControls = sectionElement.querySelector('.pagination-controls');
 	    if(existingControls) existingControls.remove();
@@ -143,6 +163,11 @@ const PlaylistComponent = (() => {
 	    sectionElement.appendChild(controls);
 	};
     
+    /**
+     * Renders form for adding existing songs to the current playlist
+     * Called by renderDetails() and when songs state changes
+     * Shows checkboxes for user's songs not already in playlist
+     */
     const renderAddSongsForm = (sectionElement) => {
         sectionElement.innerHTML = '<h3>Add More Songs</h3>';
         const allUserSongs = State.getSongs(); // All songs uploaded by the user
@@ -177,6 +202,11 @@ const PlaylistComponent = (() => {
         sectionElement.appendChild(form);
     };
 
+    /**
+     * Handles adding selected songs to the current playlist
+     * Called when add songs form is submitted
+     * Validates selection and sends PATCH request to update playlist
+     */
     const handleAddSongsToPlaylist = (event) => {
         event.preventDefault();
         const form = event.target;
@@ -219,7 +249,7 @@ const PlaylistComponent = (() => {
                    // Need to ensure makeCall sets Content-Type for JSON string.
     };
 	
-	// Sottoscrizione per quando la playlist corrente viene modificata
+	// Subscription for when current playlist is modified
     State.subscribe('currentPlaylistChanged', (updatedPlaylist) => {
         if (updatedPlaylist && currentPlaylistObj && updatedPlaylist.ID === currentPlaylistObj.ID) {
             currentPlaylistObj = updatedPlaylist;
@@ -230,7 +260,7 @@ const PlaylistComponent = (() => {
         }
     });
 
-    // Sottoscrizione per quando la lista globale delle canzoni cambia
+    // Subscription for when global songs list changes
     State.subscribe('songsChanged', () => {
         const addSongs = document.getElementById('playlist-add-songs');
         if (addSongs && currentPlaylistObj) {

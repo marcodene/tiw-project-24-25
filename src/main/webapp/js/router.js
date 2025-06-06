@@ -34,6 +34,11 @@ const Router = (() => {
         // These might be part of 'home' or separate components.
     };
 
+    /**
+     * Initializes the router by setting up DOM references and state subscriptions
+     * Called by App.init() during application startup
+     * Sets up the main content container and subscribes to view changes
+     */
     const init = () => {
         appContentContainer = document.getElementById(appContentContainerId);
         if (!appContentContainer) {
@@ -49,6 +54,11 @@ const Router = (() => {
         });
     };
 
+    /**
+     * Navigates to a specific view/route with optional data
+     * Called throughout the application to change views (e.g., from Home.render, PlayerComponent.render)
+     * Updates state and renders the appropriate component
+     */
     const navigateTo = (viewName, data = null) => {
         if (routes[viewName]) {
             State.setCurrentView(viewName); // Update state first

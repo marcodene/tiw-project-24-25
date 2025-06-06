@@ -1,6 +1,11 @@
 const Home = (() => {
     let container; // To store the main container element for the home view
 
+    /**
+     * Renders the main home page interface
+     * Called by Router when navigating to 'home' route
+     * Creates welcome message, playlists section, create playlist form, and upload song form
+     */
     const render = (appContainer) => {
         container = appContainer;
         container.innerHTML = ''; // Clear previous content
@@ -33,6 +38,11 @@ const Home = (() => {
         State.subscribe('genresChanged', () => renderUploadSongForm(uploadSongSection)); // Re-render if genres load after form
     };
 
+    /**
+     * Renders the user's playlists as a clickable list
+     * Called by render() and when playlists change via state subscription
+     * Creates playlist items with view, reorder, and delete buttons
+     */
     const renderPlaylists = (sectionElement) => {
         sectionElement.innerHTML = '<h3>Your Playlists</h3>';
         const playlists = State.getPlaylists();
@@ -56,7 +66,7 @@ const Home = (() => {
             });
 
             const reorderButton = document.createElement('button');
-            reorderButton.textContent = 'Riordina';
+            reorderButton.textContent = 'Reorder';
             reorderButton.className = 'button-reorder';
             reorderButton.addEventListener('click', (e) => {
                 e.stopPropagation(); // Prevent li click event
@@ -84,6 +94,11 @@ const Home = (() => {
         sectionElement.appendChild(ul);
     };
 
+    /**
+     * Renders the song upload form with file inputs and genre selection
+     * Called by render() and when genres change via state subscription
+     * Creates form for uploading audio files with metadata
+     */
     const renderUploadSongForm = (sectionElement) => {
         sectionElement.innerHTML = '<h3>Upload New Song</h3>';
         const genres = State.getGenres();
@@ -111,6 +126,11 @@ const Home = (() => {
         sectionElement.appendChild(form);
     };
 
+    /**
+     * Renders the playlist creation form with song selection checkboxes
+     * Called by render() and when songs change via state subscription
+     * Creates form for selecting existing songs to add to new playlist
+     */
     const renderCreatePlaylistForm = (sectionElement) => {
         sectionElement.innerHTML = '<h3>Create New Playlist</h3>';
         const allSongs = State.getSongs(); // Assuming all user songs are loaded in State
@@ -140,6 +160,11 @@ const Home = (() => {
         sectionElement.appendChild(form);
     };
     
+    /**
+     * Handles song upload form submission
+     * Called when upload song form is submitted
+     * Validates file data and sends multipart form data to server
+     */
     const handleUploadSong = (event) => {
         event.preventDefault();
         const form = event.target;
@@ -168,6 +193,11 @@ const Home = (() => {
         }, false); // false for not resetting form by makeCall, we do it manually on success
     };
 
+    /**
+     * Handles playlist creation form submission
+     * Called when create playlist form is submitted
+     * Validates playlist name and selected songs, then sends data to server
+     */
     const handleCreatePlaylist = (event) => {
         event.preventDefault();
         const form = event.target;
@@ -215,6 +245,11 @@ const Home = (() => {
                   // For now, adapting makeCall to send stringified payload (needs header set)
     };
     
+    /**
+     * Handles playlist deletion with user confirmation
+     * Called when delete button is clicked on a playlist item
+     * Shows confirmation dialog and sends DELETE request to server
+     */
     const handleDeletePlaylist = (playlistId) => {
         if (!confirm("Are you sure you want to delete this playlist? This action cannot be undone.")) {
             return;

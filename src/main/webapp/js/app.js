@@ -1,6 +1,11 @@
 const App = (() => {
     let currentUser = null; // Kept for quick access, but State.getCurrentUser() is canonical
 
+    /**
+     * Initializes the main application after authentication
+     * Called by Auth.checkSessionAndSetup() when a valid session is found
+     * Sets up global state, router and loads initial data
+     */
     const init = (userData) => {
         State.setCurrentUser(userData);
         currentUser = userData; // Local cache for convenience
@@ -30,6 +35,11 @@ const App = (() => {
         Router.navigateTo('home');
     };
 
+    /**
+     * Loads data required at application startup
+     * Called by init() to populate state with genres, playlists and songs
+     * Uses asynchronous API calls to initialize global state
+     */
     const fetchInitialData = () => {
         // Fetch genres
         makeCall('GET', '/api/genres', null, (req) => {
@@ -63,6 +73,11 @@ const App = (() => {
         });
     };
 
+    /**
+     * Completely resets application state
+     * Called by Auth.handleLogout() before redirecting to login page
+     * Clears all user data and interface state
+     */
     const reset = () => {
         currentUser = null;
         State.resetState(); // Use State's reset function

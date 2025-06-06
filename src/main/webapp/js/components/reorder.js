@@ -4,16 +4,21 @@ const ReorderComponent = (() => {
     let currentPlaylistForReorder;
     let draggedItem = null;
 
+	/**
+	 * Creates the modal HTML structure for playlist reordering
+	 * Called by showModal() when modal doesn't exist yet
+	 * Sets up modal content, drag and drop listeners, and buttons
+	 */
 	const createModal = () => {
 	    if (document.getElementById('reorderPlaylistModal')) return;
 
 	    modalElement = document.createElement('div');
 	    modalElement.id = 'reorderPlaylistModal';
-	    modalElement.className = 'modal'; // Solo classe CSS, nessuno stile inline
-	    modalElement.style.display = 'none'; // Solo questa proprietà inline per nascondere/mostrare
+	    modalElement.className = 'modal'; // CSS class only, no inline styles
+	    modalElement.style.display = 'none'; // Only this inline property to hide/show
 
 	    const modalContent = document.createElement('div');
-	    modalContent.className = 'modal-content'; // Solo classe CSS
+	    modalContent.className = 'modal-content'; // CSS class only
 
 	    const closeButton = document.createElement('span');
 	    closeButton.className = 'close-button';
@@ -22,18 +27,18 @@ const ReorderComponent = (() => {
 
 	    const title = document.createElement('h3');
 	    title.id = 'reorderModalTitle';
-	    title.textContent = 'Riordino Playlist';
+	    title.textContent = 'Reorder Playlist';
 
 	    playlistToListElement = document.createElement('ul');
 	    playlistToListElement.id = 'reorderPlaylistSongList';
-	    // Rimuovi tutti gli stili inline - saranno gestiti dal CSS
+	    // Remove all inline styles - will be handled by CSS
 
 	    const saveButton = document.createElement('button');
-	    saveButton.textContent = 'Salva Ordinamento';
+	    saveButton.textContent = 'Save Order';
 	    saveButton.onclick = handleSaveOrder;
 
 	    const cancelButton = document.createElement('button');
-	    cancelButton.textContent = 'Annulla';
+	    cancelButton.textContent = 'Cancel';
 	    cancelButton.onclick = closeModal;
 	    
 	    const messageArea = document.createElement('div');
@@ -49,19 +54,24 @@ const ReorderComponent = (() => {
 	    modalElement.appendChild(modalContent);
 	    document.body.appendChild(modalElement);
 
-	    // Drag and Drop event listeners per il container
+	    // Drag and Drop event listeners for the container
 	    playlistToListElement.addEventListener('dragover', handleDragOver);
 	    playlistToListElement.addEventListener('drop', handleDrop);
 	};
 
+	/**
+	 * Shows the reorder modal for a specific playlist
+	 * Called by Home component when reorder button is clicked
+	 * Fetches playlist details and displays draggable song list
+	 */
 	const showModal = (playlist) => {
 	    if (!modalElement) createModal();
 	    currentPlaylistForReorder = playlist;
-	    document.getElementById('reorderModalTitle').textContent = `Riordino: ${playlist.name}`;
+	    document.getElementById('reorderModalTitle').textContent = `Reorder: ${playlist.name}`;
 	    
 	    // Mostra messaggio di caricamento
 	    const messageArea = document.getElementById('reorderMessageArea');
-	    messageArea.textContent = 'Caricamento dettagli playlist...';
+	    messageArea.textContent = 'Loading playlist details...';
 	    messageArea.className = 'message-area';
 
 	    // Fetch detailed playlist information including songs
@@ -81,15 +91,15 @@ const ReorderComponent = (() => {
 	                        messageArea.textContent = '';
 	                        messageArea.className = 'message-area';
 	                    } else {
-	                        messageArea.textContent = `Errore: ${response.message || 'Impossibile caricare i dettagli della playlist.'}`;
+	                        messageArea.textContent = `Error: ${response.message || 'Unable to load playlist details.'}`;
 	                        messageArea.className = 'message-area error';
 	                    }
 	                } catch (e) {
-	                    messageArea.textContent = 'Errore nella elaborazione della risposta del server.';
+	                    messageArea.textContent = 'Error processing server response.';
 	                    messageArea.className = 'message-area error';
 	                }
 	            } else {
-	                messageArea.textContent = `Errore nel caricamento della playlist (Status: ${req.status}).`;
+	                messageArea.textContent = `Error loading playlist (Status: ${req.status}).`;
 	                messageArea.className = 'message-area error';
 	            }
 	        }
@@ -99,6 +109,11 @@ const ReorderComponent = (() => {
 	    modalElement.style.display = 'block';
 	};
 	
+    /**
+     * Closes the reorder modal and resets state
+     * Called when close button or cancel button is clicked
+     * Clears modal content and resets drag and drop state
+     */
     const closeModal = () => {
         if (modalElement) {
             modalElement.style.display = 'none';
@@ -108,6 +123,11 @@ const ReorderComponent = (() => {
         draggedItem = null;
     };
 
+	/**
+	 * Renders the list of songs as draggable items for reordering
+	 * Called by showModal() after fetching playlist details
+	 * Creates draggable list items with song names and artist information
+	 */
 	const renderSongListForReorder = (songs) => {
 	    playlistToListElement.innerHTML = ''; // Clear previous items
 	    songs.forEach((song, index) => {
@@ -124,6 +144,11 @@ const ReorderComponent = (() => {
 	};
 
     // --- Drag and Drop Handlers ---
+    /**
+     * Handles start of drag operation
+     * Called when user starts dragging a song item
+     * Sets up drag data and visual feedback
+     */
     const handleDragStart = (e) => {
         draggedItem = e.target; // The <li> element being dragged
         e.dataTransfer.effectAllowed = 'move';
@@ -132,6 +157,11 @@ const ReorderComponent = (() => {
         draggedItem.classList.add('dragging'); 
     }; 
 
+    /**
+     * Handles drag over events for reordering logic
+     * Called continuously while dragging over the list
+     * Determines drop position and rearranges items dynamically
+     */
     const handleDragOver = (e) => {
         e.preventDefault(); // Necessary to allow dropping
         e.dataTransfer.dropEffect = 'move';
@@ -154,6 +184,11 @@ const ReorderComponent = (() => {
         }
     };
 
+    /**
+     * Handles drop event to finalize item reordering
+     * Called when user releases dragged item
+     * Cleans up drag state and finalizes position
+     */
     const handleDrop = (e) => {
         e.preventDefault();
         if (draggedItem) {
@@ -165,6 +200,11 @@ const ReorderComponent = (() => {
     };
     // --- End Drag and Drop Handlers ---
 
+    /**
+     * Handles saving the new song order to the server
+     * Called when save button is clicked in reorder modal
+     * Collects current order from DOM and sends PUT request to update playlist
+     */
     const handleSaveOrder = () => {
         const messageArea = document.getElementById('reorderMessageArea');
         messageArea.textContent = 'Saving order...';

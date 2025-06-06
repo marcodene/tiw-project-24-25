@@ -2,6 +2,11 @@ const PlayerComponent = (() => {
     let container; // Main container for this component's view
     let currentSongObj; // Stores the song object passed by the router
 
+    /**
+     * Renders the song player interface with song details and audio controls
+     * Called by Router when navigating to 'player' route with song data
+     * Displays song metadata, album cover, audio player, and action buttons
+     */
     const render = (appContainer, song) => {
         container = appContainer;
         container.innerHTML = ''; // Clear previous content
@@ -45,6 +50,11 @@ const PlayerComponent = (() => {
         renderPlayerActions(actionsSection);
     };
 
+    /**
+     * Renders detailed song information including album cover and metadata
+     * Called by render() to display song title, artist, album, genre, and cover image
+     * Creates formatted display of all song properties
+     */
     const renderSongDetails = (sectionElement) => {
         const detailsDiv = document.createElement('div');
         detailsDiv.className = 'song-full-details';
@@ -61,6 +71,11 @@ const PlayerComponent = (() => {
         sectionElement.appendChild(detailsDiv);
     };
 
+    /**
+     * Renders HTML5 audio player element for song playback
+     * Called by render() to create audio controls for the current song
+     * Sets up audio element with proper source path and fallback message
+     */
     const renderAudioPlayer = (sectionElement) => {
         const audioPlayerDiv = document.createElement('div');
         audioPlayerDiv.className = 'audio-player-container';
@@ -82,6 +97,11 @@ const PlayerComponent = (() => {
         sectionElement.appendChild(audioPlayerDiv);
     };
 
+    /**
+     * Renders action buttons for the player (delete song)
+     * Called by render() to create interactive controls for song management
+     * Sets up delete button and message area for user feedback
+     */
     const renderPlayerActions = (sectionElement) => {
         const deleteButton = document.createElement('button');
         deleteButton.textContent = 'Delete This Song';
@@ -96,6 +116,11 @@ const PlayerComponent = (() => {
         sectionElement.appendChild(messageArea);
     };
 
+    /**
+     * Handles song deletion with user confirmation
+     * Called when delete button is clicked in player actions
+     * Shows confirmation dialog, sends DELETE request, and navigates away after deletion
+     */
     const handleDeleteSong = () => {
         if (!currentSongObj || !currentSongObj.ID) return;
 
