@@ -75,3 +75,36 @@ function makeCall(method, url, data, cback, reset = true) {
     // If it passes the HTMLFormElement, the above try-catch for FormData handles it.
     // The current components (Home.js) using FormData call form.reset() themselves, which is the correct pattern.
 }
+
+// Session Management Utility
+const SessionManager = {
+    setUser(userData) {
+        try {
+            sessionStorage.setItem('user', JSON.stringify(userData));
+            console.log('✅ User data saved to session');
+        } catch (e) {
+            console.error('❌ Failed to save user data:', e);
+        }
+    },
+
+    getUser() {
+        try {
+            const stored = sessionStorage.getItem('user');
+            return stored ? JSON.parse(stored) : null;
+        } catch (e) {
+            console.error('❌ Corrupted user data, clearing session');
+            this.clearUser();
+            return null;
+        }
+    },
+
+    clearUser() {
+        sessionStorage.removeItem('user');
+        console.log('🗑️ User session cleared');
+    },
+
+    hasValidUser() {
+        const user = this.getUser();
+        return user && user.username && user.id;
+    }
+};

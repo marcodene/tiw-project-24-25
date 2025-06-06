@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Music Playlist RIA</title>
+    <title>Music Playlist RIA - Home</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -12,18 +12,7 @@
             <h1>Music Playlist App</h1>
         </header>
         <main>
-            <div id="auth-container">
-                <h2>Accesso Utente</h2>
-                <div id="login-form-container">
-                    <!-- Login form will be injected here -->
-                </div>
-                <div id="register-form-container" style="display:none;">
-                    <!-- Register form will be injected here -->
-                </div>
-                <div id="auth-error-message" class="error-message" style="display:none;"></div>
-            </div>
-
-            <div id="app-container" style="display:none;">
+            <div id="app-container">
                 <nav id="app-nav">
                     <button id="logoutButton">Logout</button>
                 </nav>
@@ -50,9 +39,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            Auth.init(); // Initialize authentication logic
-            // App.init() will be called by Auth upon successful login
-            // or if a valid session is detected by Auth.checkSession()
+            Auth.checkSessionForHomePage();
         });
     </script>
 </body>

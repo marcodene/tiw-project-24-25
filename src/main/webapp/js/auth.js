@@ -29,7 +29,7 @@ const Auth = (() => {
 	                    console.log("User session found, initializing app.");
 	                    
 	                    // Opzionale: salva in sessionStorage per avere una copia locale
-	                    sessionStorage.setItem('user', JSON.stringify(response.data));
+	                    SessionManager.setUser(response.data);
 	                    
 	                    showApp();
 	                    App.init(response.data); // Inizializza l'applicazione con i dati utente
@@ -50,7 +50,7 @@ const Auth = (() => {
 	};
 
 	const showLoginForm = () => {
-		if (!loginFormContainer || !registerFormContainer || !authContainer || !appContainer) {
+		if (!loginFormContainer || !registerFormContainer || !authContainer) {
 			console.error('Auth containers not found'); return;
 		}
 		loginFormContainer.innerHTML = `
@@ -71,7 +71,6 @@ const Auth = (() => {
 		loginFormContainer.style.display = 'block';
 		registerFormContainer.style.display = 'none';
 		authContainer.style.display = 'block';
-		appContainer.style.display = 'none';
 		clearErrorMessage();
 		document.getElementById('loginForm').addEventListener('submit', handleLogin);
 		document.getElementById('showRegister').addEventListener('click', (e) => { e.preventDefault(); showRegisterForm(); });
@@ -124,11 +123,10 @@ const Auth = (() => {
 			if (req.readyState === XMLHttpRequest.DONE) {
 				const response = JSON.parse(req.responseText);
 				if (req.status === 200 && response.status === 'success') {
-					sessionStorage.setItem('user', JSON.stringify(response.data));
+					SessionManager.setUser(response.data);
 					displaySuccessMessage("Login successful! Redirecting...");
 					setTimeout(() => {
 						showApp();
-						App.init(response.data);
 					}, 1000);
 				} else {
 					const message = response.message || "Login fallito.";
@@ -162,7 +160,6 @@ const Auth = (() => {
 					 displaySuccessMessage("Registrazione completata! Redirecting...");
 					setTimeout(() => {
 						showApp();
-						App.init(response.data);
 					}, 1000);
 				} else {
 					let message = response.message || "Registrazione fallita.";
@@ -179,15 +176,14 @@ const Auth = (() => {
 	const handleLogout = () => {
 		makeCall('POST', '/api/logout', null, (req) => {
 			if (req.readyState === XMLHttpRequest.DONE) {
-				sessionStorage.removeItem('user');
+				SessionManager.clearUser();
 				if (req.status === 200) { // Assuming 200 for successful logout
-					displaySuccessMessage("Logout successful!");
-					 setTimeout(() => {
-						showLoginForm();
-						if (typeof App !== 'undefined' && App.reset) {
-							App.reset();
-						}
-					}, 1000);
+					// Clean up application state before redirect
+					if (typeof App !== 'undefined' && App.reset) {
+						App.reset();
+					}
+					// Redirect to login page
+					window.location.href = 'login.html';
 				} else {
 					displayErrorMessage("Logout fallito. Riprova.");
 				}
@@ -208,12 +204,8 @@ const Auth = (() => {
 	};
 
 	const showApp = () => {
-		if (!authContainer || !appContainer) {
-			console.error('Auth or App container not found'); return;
-		}
-		authContainer.style.display = 'none';
-		appContainer.style.display = 'block';
-		clearErrorMessage();
+		// Redirect to home page after successful authentication
+		window.location.href = './';
 	};
 
 	const setupEventListeners = () => {
@@ -248,11 +240,92 @@ const Auth = (() => {
 		errorMessageElement.style.display = 'none';
 	};
 
+	const syncSessionWithServer = () => {
+		return new Promise((resolve) => {
+			const localUser = SessionManager.getUser();
+			
+			makeCall('GET', '/api/checkAuth', null, (req) => {
+				if (req.readyState === XMLHttpRequest.DONE) {
+					try {
+						const response = JSON.parse(req.responseText);
+						
+						if (req.status === 200 && response.status === 'success') {
+							// Server ha sessione valida
+							if (!localUser || localUser.id !== response.data.id) {
+								// Aggiorna sessionStorage con dati server
+								SessionManager.setUser(response.data);
+							}
+							resolve(response.data);
+						} else {
+							// Server non ha sessione valida
+							if (localUser) {
+								SessionManager.clearUser(); // Pulisci dati locali stantii
+							}
+							resolve(null);
+						}
+					} catch (error) {
+						console.error('❌ Session validation failed:', error);
+						resolve(localUser); // Usa dati locali come fallback
+					}
+				}
+			});
+		});
+	};
+
+	const initLoginPage = () => {
+		loginFormContainer = document.getElementById(loginFormContainerId);
+		registerFormContainer = document.getElementById(registerFormContainerId);
+		authContainer = document.getElementById(authContainerId);
+		errorMessageElement = document.getElementById(errorMessageElementId);
+
+		// Check if already authenticated and redirect
+		checkSessionAndRedirect();
+	};
+
+	const checkSessionAndRedirect = () => {
+		syncSessionWithServer().then(userData => {
+			if (userData) {
+				// User already authenticated, redirect to home
+				console.log("User already authenticated, redirecting to home");
+				window.location.href = './';
+			} else {
+				// No valid session, show login form
+				console.log("No active session, showing login form.");
+				showLoginForm();
+				setupEventListeners();
+			}
+		}).catch(error => {
+			// Error during session check, show login form
+			console.log("Error parsing authentication response, showing login form.", error);
+			showLoginForm();
+			setupEventListeners();
+		});
+	};
+
+	const checkSessionForHomePage = () => {
+		console.log("🔍 checkSessionForHomePage: Checking session...");
+		
+		syncSessionWithServer().then(userData => {
+			if (userData) {
+				console.log("✅ checkSessionForHomePage: Valid session, initializing app");
+				App.init(userData);
+			} else {
+				console.log("❌ checkSessionForHomePage: No valid session, redirecting to login");
+				window.location.href = 'login.html';
+			}
+		}).catch(error => {
+			console.error("❌ checkSessionForHomePage: Error during session sync", error);
+			window.location.href = 'login.html';
+		});
+	};
+
 	return {
 		init,
+		initLoginPage,
 		showLoginForm,
 		showRegisterForm,
 		handleLogout, // Expose logout to be callable from App.js if needed
-		checkSessionAndSetup // Expose for potential re-check
+		checkSessionAndSetup, // Expose for potential re-check
+		checkSessionForHomePage
 	};
 })();

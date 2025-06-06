@@ -7,7 +7,6 @@ const App = (() => {
         
         console.log("App initialized for user:", currentUser.username);
         document.getElementById('app-container').style.display = 'block';
-        document.getElementById('auth-container').style.display = 'none';
         
         Router.init(); // Initialize the router
         // Router.navigateTo('home'); // Navigate to home view after login

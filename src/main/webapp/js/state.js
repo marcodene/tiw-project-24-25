@@ -1,5 +1,5 @@
 const State = (() => {
-    let currentUser = null;
+    let currentUser = SessionManager.getUser(); // Initialize from SessionManager
     let playlists = []; // List of user's playlists
     let songs = []; // List of user's songs (all loaded, or per playlist)
     let currentPlaylist = null; // The currently selected/viewed playlist object
@@ -24,9 +24,17 @@ const State = (() => {
     };
 
     return {
-        getCurrentUser: () => currentUser,
+        getCurrentUser: () => {
+            // Always sync with SessionManager
+            const stored = SessionManager.getUser();
+            if (stored && (!currentUser || currentUser.id !== stored.id)) {
+                currentUser = stored;
+            }
+            return currentUser;
+        },
         setCurrentUser: (user) => {
             currentUser = user;
+            SessionManager.setUser(user); // Keep SessionManager in sync
             notify('userChanged', currentUser);
         },
 
@@ -130,6 +138,7 @@ const State = (() => {
             currentSong = null;
             currentView = 'login';
             genres = [];
+            SessionManager.clearUser(); // Clear SessionManager too
             console.log("State reset.");
             notify('stateReset');
         },

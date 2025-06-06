@@ -5,9 +5,6 @@ const Router = (() => {
     const routes = {
         // Each function should render its view into appContentContainer
         // and can take data (e.g., an ID for detail views)
-        'login': () => { // Though login is handled by Auth.js, router can know about it
-            Auth.showLoginForm(); // Delegate to Auth module
-        },
         'home': (data) => {
             // Example: Home.render(appContentContainer, data);
             // This will be implemented by components/home.js
@@ -56,17 +53,12 @@ const Router = (() => {
         if (routes[viewName]) {
             State.setCurrentView(viewName); // Update state first
             console.log(`Routing to ${viewName} with data:`, data);
-            if (!appContentContainer && viewName !== 'login') { // Re-check container if not login
+            if (!appContentContainer) { // Re-check container
                 init(); // Attempt to re-init if container was missing (e.g., after async load)
                 if(!appContentContainer) {
                      console.error("App content container still missing. Cannot navigate.");
                      return;
                 }
-            }
-            // For non-login views, ensure app-content is visible
-            if (viewName !== 'login' && appContentContainer) {
-                 document.getElementById('auth-container').style.display = 'none';
-                 document.getElementById('app-container').style.display = 'block';
             }
             
             routes[viewName](data); // Execute the route function to render the view

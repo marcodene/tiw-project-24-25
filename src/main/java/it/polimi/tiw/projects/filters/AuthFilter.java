@@ -28,9 +28,30 @@ public class AuthFilter implements Filter {
         
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
+        String requestURI = httpRequest.getRequestURI();
+        String contextPath = httpRequest.getContextPath();
         
+        //TODO da togliere probabilmente
         // Skip for OPTIONS requests (preflight)
         if ("OPTIONS".equalsIgnoreCase(httpRequest.getMethod())) {
+            chain.doFilter(request, response);
+            return;
+        }
+        
+        // Allow access to login page and related resources
+        if (requestURI.endsWith("/login.html") || 
+            requestURI.endsWith("/index.html") ||
+            requestURI.equals(contextPath + "/") ||
+            requestURI.endsWith("/css/style.css") ||
+            requestURI.endsWith("/js/utils.js") ||
+            requestURI.endsWith("/js/auth.js") ||
+            requestURI.endsWith("/js/app.js") ||
+            requestURI.endsWith("/js/router.js") ||
+            requestURI.endsWith("/js/state.js") ||
+            requestURI.contains("/js/components/") ||
+            requestURI.contains("/api/login") ||
+            requestURI.contains("/api/register") ||
+            requestURI.contains("/api/checkAuth")) {
             chain.doFilter(request, response);
             return;
         }
@@ -38,10 +59,18 @@ public class AuthFilter implements Filter {
         // Check if user is logged in
         HttpSession session = httpRequest.getSession(false);
         if (session == null || session.getAttribute("user") == null) {
-            httpResponse.setContentType("application/json");
-            httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            httpResponse.getWriter().println("{ \"error\": \"User not logged in\" }");
-            return;
+            // For API requests, return JSON error
+            if (requestURI.startsWith(contextPath + "/api/")) {
+                httpResponse.setContentType("application/json");
+                httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                httpResponse.getWriter().println("{ \"error\": \"User not logged in\" }");
+                return;
+            }
+            // For page requests, redirect to login
+            else {
+                httpResponse.sendRedirect(contextPath + "/login.html");
+                return;
+            }
         }
         
         chain.doFilter(request, response);
