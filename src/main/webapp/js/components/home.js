@@ -20,13 +20,20 @@ const Home = (() => {
         playlistsSection.id = 'home-playlists-section';
         container.appendChild(playlistsSection);
 
+        const formsContainer = document.createElement('div');
+        formsContainer.className = 'form-columns';
+        
         const createPlaylistSection = document.createElement('section');
         createPlaylistSection.id = 'home-create-playlist-section';
-        container.appendChild(createPlaylistSection);
+        createPlaylistSection.className = 'card';
+        formsContainer.appendChild(createPlaylistSection);
         
         const uploadSongSection = document.createElement('section');
         uploadSongSection.id = 'home-upload-song-section';
-        container.appendChild(uploadSongSection);
+        uploadSongSection.className = 'card';
+        formsContainer.appendChild(uploadSongSection);
+        
+        container.appendChild(formsContainer);
 
         renderPlaylists(playlistsSection);
         renderCreatePlaylistForm(createPlaylistSection);
@@ -35,7 +42,7 @@ const Home = (() => {
         // Subscribe to state changes to re-render if necessary
         State.subscribe('playlistsChanged', () => renderPlaylists(playlistsSection));
         State.subscribe('songsChanged', () => renderCreatePlaylistForm(createPlaylistSection));
-        State.subscribe('genresChanged', () => renderUploadSongForm(uploadSongSection)); // Re-render if genres load after form
+        State.subscribe('genresChanged', () => renderUploadSongForm(uploadSongSection));
     };
 
     /**
@@ -51,47 +58,38 @@ const Home = (() => {
             return;
         }
 
-        const ul = document.createElement('ul');
-        ul.className = 'playlist-list';
+        const grid = document.createElement('div');
+        grid.className = 'playlist-grid';
         playlists.forEach(playlist => {
-            const li = document.createElement('li');
-            li.className = 'playlist-item';
+            const card = document.createElement('div');
+            card.className = 'playlist-card';
             
-            const nameSpan = document.createElement('span');
-            nameSpan.textContent = playlist.name;
-            nameSpan.style.cursor = 'pointer';
-            nameSpan.addEventListener('click', () => {
-                State.setCurrentPlaylist(playlist); // Set the full playlist object in state
-                Router.navigateTo('playlist', playlist); // Pass the full playlist object
-            });
+            card.innerHTML = `
+                <h4>${playlist.name}</h4>
+                <p>${playlist.songs ? playlist.songs.length : 0} songs</p>
+                <div class="playlist-actions">
+                    <button class="view-btn">View</button>
+                    <button class="delete-btn">Delete</button>
+                </div>
+            `;
 
-            const reorderButton = document.createElement('button');
-            reorderButton.textContent = 'Reorder';
-            reorderButton.className = 'button-reorder';
-            reorderButton.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent li click event
-                // Ensure ReorderComponent is available and show modal
-                if (typeof ReorderComponent !== 'undefined' && ReorderComponent.showModal) {
-                    ReorderComponent.showModal(playlist);
-                } else {
-                    alert('Reorder functionality not available yet.');
-                }
+            // Add click event to view button
+            const viewButton = card.querySelector('.view-btn');
+            viewButton.addEventListener('click', () => {
+                State.setCurrentPlaylist(playlist);
+                Router.navigateTo('playlist', playlist);
             });
             
-            const deleteButton = document.createElement('button');
-            deleteButton.textContent = 'Delete';
-            deleteButton.className = 'button-delete';
+            // Add click event to delete button
+            const deleteButton = card.querySelector('.delete-btn');
             deleteButton.addEventListener('click', (e) => {
                 e.stopPropagation();
                 handleDeletePlaylist(playlist.ID);
             });
 
-            li.appendChild(nameSpan);
-            li.appendChild(reorderButton);
-            li.appendChild(deleteButton);
-            ul.appendChild(li);
+            grid.appendChild(card);
         });
-        sectionElement.appendChild(ul);
+        sectionElement.appendChild(grid);
     };
 
     /**
@@ -287,5 +285,3 @@ const Home = (() => {
     };
 })();
 
-// Ensure ReorderComponent is defined (placeholder for now if not created)
-// const ReorderComponent = ReorderComponent || { showModal: (playlist) => alert(\`Reorder for \${playlist.name} clicked\`) };

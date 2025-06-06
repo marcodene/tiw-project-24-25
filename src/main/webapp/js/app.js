@@ -11,21 +11,33 @@ const App = (() => {
         currentUser = userData; // Local cache for convenience
         
         console.log("App initialized for user:", currentUser.username);
-        document.getElementById('app-container').style.display = 'block';
-        
-        Router.init(); // Initialize the router
-        // Router.navigateTo('home'); // Navigate to home view after login
-
-        // Setup main app layout and components (e.g., header, nav)
-        const appNav = document.getElementById('app-nav');
-        if (appNav) {
-            // Example: Dynamic nav based on user, or just ensure logout is there
+        const appContainer = document.getElementById('app-container');
+        if (appContainer) {
+            appContainer.style.display = 'block';
         }
         
+        // Update user greeting in header
+        const userGreeting = document.getElementById('user-greeting');
+        if (userGreeting) {
+            userGreeting.textContent = `Hello, ${currentUser.name || currentUser.username}`;
+        }
+        
+        Router.init(); // Initialize the router
+
+        // Setup logout button
         const logoutButton = document.getElementById('logoutButton');
         if (logoutButton && !logoutButton.hasAttribute('listener-attached')) {
-            logoutButton.addEventListener('click', Auth.handleLogout); // Auth.handleLogout should call State.resetState()
+            logoutButton.addEventListener('click', Auth.handleLogout);
             logoutButton.setAttribute('listener-attached', 'true');
+        }
+        
+        // Setup account button (placeholder functionality)
+        const accountButton = document.getElementById('accountButton');
+        if (accountButton && !accountButton.hasAttribute('listener-attached')) {
+            accountButton.addEventListener('click', () => {
+                alert('Account management not implemented yet');
+            });
+            accountButton.setAttribute('listener-attached', 'true');
         }
         
         // Initial data fetching for the app

@@ -43,10 +43,28 @@ const PlaylistComponent = (() => {
 	                    header.textContent = `Playlist: ${currentPlaylistObj.name}`;
 	                    container.appendChild(header);
 
+	                    const actionButtons = document.createElement('div');
+	                    actionButtons.className = 'playlist-actions';
+	                    
 	                    const backButton = document.createElement('button');
 	                    backButton.textContent = 'Back to Home';
+	                    backButton.className = 'back-link';
 	                    backButton.addEventListener('click', () => Router.navigateTo('home'));
-	                    container.appendChild(backButton);
+	                    
+	                    const reorderButton = document.createElement('button');
+	                    reorderButton.textContent = 'Reorder Songs';
+	                    reorderButton.className = 'reorder-btn';
+	                    reorderButton.addEventListener('click', () => {
+	                        if (typeof ReorderComponent !== 'undefined' && ReorderComponent.showModal) {
+	                            ReorderComponent.showModal(currentPlaylistObj);
+	                        } else {
+	                            alert('Reorder functionality not available yet.');
+	                        }
+	                    });
+	                    
+	                    actionButtons.appendChild(backButton);
+	                    actionButtons.appendChild(reorderButton);
+	                    container.appendChild(actionButtons);
 
 	                    const songsDisplaySection = document.createElement('section');
 	                    songsDisplaySection.id = 'playlist-songs-display';

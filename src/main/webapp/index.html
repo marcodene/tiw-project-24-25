@@ -7,15 +7,19 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div id="page-container">
+    <div class="container">
         <header>
-            <h1>Music Playlist App</h1>
+            <div class="logo">
+                <h1>Music Playlist</h1>
+            </div>
+            <div class="user-nav">
+                <p id="user-greeting">Hello, User</p>
+                <button id="accountButton" class="account-btn">Account</button>
+                <button id="logoutButton" class="logout-btn">Logout</button>
+            </div>
         </header>
         <main>
             <div id="app-container">
-                <nav id="app-nav">
-                    <button id="logoutButton">Logout</button>
-                </nav>
                 <div id="app-content">
                     <!-- Main application content will be injected here -->
                 </div>
