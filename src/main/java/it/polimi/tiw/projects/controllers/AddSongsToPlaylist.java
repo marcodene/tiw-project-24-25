@@ -2,13 +2,10 @@ package it.polimi.tiw.projects.controllers;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -18,32 +15,22 @@ import java.util.Set;
 import it.polimi.tiw.projects.beans.User;
 import it.polimi.tiw.projects.dao.PlaylistDAO;
 import it.polimi.tiw.projects.dao.SongDAO;
-import it.polimi.tiw.projects.utils.ConnectionHandler;
-import it.polimi.tiw.projects.utils.FlashMessagesManager;
 
 @WebServlet("/AddSongsToPlaylist")
-public class AddSongsToPlaylist extends HttpServlet {
-	private static final long serialVersionUID = 1L;
-	private Connection connection;
+public class AddSongsToPlaylist extends ServletBase {
+    private static final long serialVersionUID = 1L;
     
     public AddSongsToPlaylist() {
         super();
     }
-    
-    public void init() throws ServletException {
-    	connection = ConnectionHandler.getConnection(getServletContext());
-    }
 
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// if the user is not logged in (not present in session) redirect to the login
-		HttpSession session = request.getSession();
-		if(session.isNew() || session.getAttribute("user")==null) {
-			String loginPagePath = getServletContext().getContextPath() + "/";
-			response.sendRedirect(loginPagePath);
-			return;
-		}
-		
-		User user = (User) session.getAttribute("user");
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // Controllo autenticazione utilizzando ServletBase
+        User user = checkLogin(request, response);
+        if (user == null) {
+            return; // checkLogin ha già fatto il redirect
+        }
+        
         PlaylistDAO playlistDAO = new PlaylistDAO(connection);
         SongDAO songDAO = new SongDAO(connection);
         
@@ -52,26 +39,16 @@ public class AddSongsToPlaylist extends HttpServlet {
         boolean hasErrors = false;
         String successMessage = null;
         
-        String playlistIdStr = null;
+        // Parsing parametri utilizzando ServletBase
+        int playlistId = getIntParam(request, "playlistId");
+        String[] selectedSongIDStrings = request.getParameterValues("selectedSongs");
         int[] selectedSongIDs = null;
-        String[] selectedSongIDStrings = null;
-        int playlistId = -1;
         
         try {
-        	playlistIdStr = request.getParameter("playlistId");
-        	selectedSongIDStrings = request.getParameterValues("selectedSongs");
-            
-            // Validazione playlistId
-            if (playlistIdStr == null || playlistIdStr.isEmpty()) {
+            // Validazione playlistId utilizzando ServletBase
+            if (playlistId == -1) {
                 errorMessages.put("addSongs_playlistError", "Playlist ID is required");
                 hasErrors = true;
-            } else {
-                try {
-                    playlistId = Integer.parseInt(playlistIdStr);
-                } catch (NumberFormatException e) {
-                    errorMessages.put("addSongs_playlistError", "Invalid playlist ID format");
-                    hasErrors = true;
-                }
             }
             
             // Validazione selezione canzoni
@@ -102,7 +79,7 @@ public class AddSongsToPlaylist extends HttpServlet {
                 hasErrors = true;
             }
             
-            // Verifiche di sicurezza e business logic
+            // Verifiche di sicurezza
             if (!hasErrors) {
                 try {
                     // Verify playlist belongs to user
@@ -132,8 +109,8 @@ public class AddSongsToPlaylist extends HttpServlet {
         // Se non ci sono errori, procedi con l'aggiunta delle canzoni
         if (!hasErrors) {
             try {
-                // Add songs to playlist
-            	boolean success = playlistDAO.addSongsToPlaylist(playlistId, selectedSongIDs, user.getId());
+            	
+                boolean success = playlistDAO.addSongsToPlaylist(playlistId, selectedSongIDs, user.getId());
                 
                 if (!success) {
                     errorMessages.put("addSongs_generalError", "Failed to add songs to playlist");
@@ -149,45 +126,25 @@ public class AddSongsToPlaylist extends HttpServlet {
             }
         }
         
-        // PATTERN POST-REDIRECT-GET: Gestione flash messages
-        
-        // Aggiungi messaggio di successo
-        if (successMessage != null) {
-            FlashMessagesManager.addSuccessMessage(request, successMessage);
-        }
-        
-        // Aggiungi errori strutturati
-        if (!errorMessages.isEmpty()) {
-            FlashMessagesManager.addFieldErrors(request, errorMessages);
-        }
-        
-        // SEMPRE redirect, mai forward (pattern PRG)
+        // PATTERN POST-REDIRECT-GET utilizzando ServletBase
         String playlistPagePath = getServletContext().getContextPath() + 
             "/GoToPlaylistPage?playlistId=" + playlistId;
-        response.sendRedirect(playlistPagePath);
-	}
-	
-	private boolean containsDuplicates(int[] songIDs) {
-	    if (songIDs == null || songIDs.length < 2) {
-	        return false;
-	    }
-	    
-	    Set<Integer> uniqueSongs = new HashSet<>();
-	    
-	    for (int songID : songIDs) {
-	        if (!uniqueSongs.add(songID)) {
-	            return true;
-	        }
-	    }
-	    
-	    return false;
-	}
+        doRedirect(request, response, playlistPagePath, successMessage, errorMessages, null);
+    }
     
-    public void destroy() {
-        try {
-            ConnectionHandler.closeConnection(connection);
-        } catch (SQLException e) {
-            e.printStackTrace();
+    private boolean containsDuplicates(int[] songIDs) {
+        if (songIDs == null || songIDs.length < 2) {
+            return false;
         }
+        
+        Set<Integer> uniqueSongs = new HashSet<>();
+        
+        for (int songID : songIDs) {
+            if (!uniqueSongs.add(songID)) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 }

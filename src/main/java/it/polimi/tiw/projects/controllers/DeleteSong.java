@@ -2,13 +2,10 @@ package it.polimi.tiw.projects.controllers;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,55 +13,40 @@ import java.util.Map;
 import it.polimi.tiw.projects.beans.Song;
 import it.polimi.tiw.projects.beans.User;
 import it.polimi.tiw.projects.dao.SongDAO;
-import it.polimi.tiw.projects.utils.ConnectionHandler;
-import it.polimi.tiw.projects.utils.FlashMessagesManager;
 
 @WebServlet("/DeleteSong")
-public class DeleteSong extends HttpServlet {
+public class DeleteSong extends ServletBase {
     private static final long serialVersionUID = 1L;
-    private Connection connection;
     
     public DeleteSong() {
         super();
     }
     
-    public void init() throws ServletException {
-        connection = ConnectionHandler.getConnection(getServletContext());
+    @Override
+    protected boolean needsTemplateEngine() {
+        return false;
     }
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // Check if user is logged in
-        HttpSession session = request.getSession();
-        if (session.isNew() || session.getAttribute("user") == null) {
-            String loginPath = getServletContext().getContextPath() + "/";
-            response.sendRedirect(loginPath);
-            return;
+        // Controllo autenticazione utilizzando ServletBase
+        User user = checkLogin(request, response);
+        if (user == null) {
+            return; // checkLogin ha già fatto il redirect
         }
         
-        User user = (User) session.getAttribute("user");
-        
-        // Mappa per messaggi di errore strutturati (pattern PRG standard)
+        // Mappa per messaggi di errore 
         Map<String, String> errorMessages = new HashMap<>();
         boolean hasErrors = false;
         String successMessage = null;
         
-        // Get song ID and optional playlist ID from request
-        String songIDStr = request.getParameter("songID");
+        // Parsing parametri
+        int songID = getIntParam(request, "songID");
         String playlistIdStr = request.getParameter("playlistId"); // Per il redirect intelligente
         
-        if (songIDStr == null || songIDStr.isEmpty()) {
+        // Validazione 
+        if (songID == -1) {
             errorMessages.put("generalError", "Song ID is required");
             hasErrors = true;
-        }
-        
-        int songID = -1;
-        if (!hasErrors) {
-            try {
-                songID = Integer.parseInt(songIDStr);
-            } catch (NumberFormatException e) {
-                errorMessages.put("generalError", "Invalid song ID format");
-                hasErrors = true;
-            }
         }
         
         // Se non ci sono errori di validazione, procedi con la cancellazione
@@ -95,21 +77,9 @@ public class DeleteSong extends HttpServlet {
             }
         }
         
-        // PATTERN POST-REDIRECT-GET: Gestione flash messages
-        
-        // Aggiungi messaggio di successo
-        if (successMessage != null) {
-            FlashMessagesManager.addSuccessMessage(request, successMessage);
-        }
-        
-        // Aggiungi errori strutturati
-        if (!errorMessages.isEmpty()) {
-            FlashMessagesManager.addFieldErrors(request, errorMessages);
-        }
-        
         // REDIRECT INTELLIGENTE basato su dove è stata chiamata la cancellazione
         String redirectPath;
-        if (playlistIdStr != null && !playlistIdStr.isEmpty()) {
+        if (!isEmpty(playlistIdStr)) {
             // Se proveniamo da una playlist, torniamo a quella playlist
             redirectPath = getServletContext().getContextPath() + "/GoToPlaylistPage?playlistId=" + playlistIdStr;
         } else {
@@ -117,15 +87,7 @@ public class DeleteSong extends HttpServlet {
             redirectPath = getServletContext().getContextPath() + "/Home";
         }
         
-        // SEMPRE redirect (pattern PRG)
-        response.sendRedirect(redirectPath);
-    }
-    
-    public void destroy() {
-        try {
-            ConnectionHandler.closeConnection(connection);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        // PATTERN POST-REDIRECT-GET 
+        doRedirect(request, response, redirectPath, successMessage, errorMessages, null);
     }
 }

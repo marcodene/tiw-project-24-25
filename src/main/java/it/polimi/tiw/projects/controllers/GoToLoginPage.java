@@ -1,100 +1,99 @@
 package it.polimi.tiw.projects.controllers;
 
-import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.WebContext;
-import org.thymeleaf.templatemode.TemplateMode;
-import org.thymeleaf.templateresolver.WebApplicationTemplateResolver;
-import org.thymeleaf.web.servlet.JakartaServletWebApplication;
 
 import it.polimi.tiw.projects.utils.FlashMessagesManager;
 
-
 @WebServlet("/")
-public class GoToLoginPage extends HttpServlet {
-	private static final long serialVersionUID = 1L;
-	private TemplateEngine templateEngine;
+public class GoToLoginPage extends ServletBase {
+    private static final long serialVersionUID = 1L;
     
     public GoToLoginPage() {
         super();
     }
+
+    @Override
+    protected boolean needsDatabase() {
+        return false;
+    }
+
+    @Override
+    protected boolean needsAuth() {
+        return false;
+    }
+
     
-    public void init() throws ServletException {
-		ServletContext servletContext = getServletContext();
-		JakartaServletWebApplication webApplication = JakartaServletWebApplication.buildApplication(servletContext);     
-		WebApplicationTemplateResolver templateResolver = new WebApplicationTemplateResolver(webApplication);
-		templateResolver.setTemplateMode(TemplateMode.HTML);
-		this.templateEngine = new TemplateEngine();
-		this.templateEngine.setTemplateResolver(templateResolver);
-		templateResolver.setSuffix(".html");
-	}
-	
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// If the user is logged in (already present in session) redirect to the HomePage
-    	String homePagePath = getServletContext().getContextPath() + "/Home";
-    	HttpSession session = request.getSession();
-    	if(session!=null && session.getAttribute("user")!=null) {
-    		response.sendRedirect(homePagePath);
-    		return;
-    	}
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // Controllo sessione inverso utilizzando ServletBase
+        if (redirectIfLogged(request, response)) {
+            return;
+        }
+        
+        // Creazione WebContext
+        WebContext ctx = createContext(request, response);
+        
+        // FLASH MESSAGES
+        setupLoginPageMessages(ctx, request);
+        
+        // Rendering
+        String templatePath = "/WEB-INF/index.html";
+        templateEngine.process(templatePath, ctx, response.getWriter());
+    }
+    
+    /**
+     * Gestisce la logica complessa dei flash messages per la pagina di login
+     * Include messaggi da registrazione, logout, account deleted e errori login
+     */
+    private void setupLoginPageMessages(WebContext ctx, HttpServletRequest request) {
     	
-    	String path = "/WEB-INF/index.html";
-    	ServletContext servletContext = getServletContext();
-    	JakartaServletWebApplication webApplication = JakartaServletWebApplication.buildApplication(getServletContext());
-    	WebContext ctx = new WebContext(webApplication.buildExchange(request, response), request.getLocale());
-    	
-    	// FLASH MESSAGES: Leggi messaggi dalla sessione
-    	
-    	// === MESSAGGI DI SUCCESSO (es. dalla registrazione) ===
-    	List<String> successMessages = FlashMessagesManager.getAndClearSuccessMessages(request);
-    	if (!successMessages.isEmpty()) {
-    	    ctx.setVariable("successMessage", successMessages.get(0));
-    	}
-    	
-    	// === ACCOUNT DELETED SUCCESS MESSAGE ===
-    	// Caso speciale: account cancellato (sessione invalidata, usiamo parametro URL)
-    	String accountDeleted = request.getParameter("accountDeleted");
-    	if ("true".equals(accountDeleted)) {
-    	    ctx.setVariable("successMessage", "Account deleted successfully. Thank you for using our service.");
-    	}
-    	
-    	// === LOGOUT SUCCESS MESSAGE ===
-    	// Caso speciale: logout (sessione invalidata, usiamo parametro URL)
-    	String loggedOut = request.getParameter("loggedOut");
-    	if ("true".equals(loggedOut)) {
-    	    ctx.setVariable("successMessage", "You have been logged out successfully. See you soon!");
-    	}
-    	
-    	// === MESSAGGI DI ERRORE LOGIN ===
-    	Map<String, String> allFieldErrors = FlashMessagesManager.getAndClearFieldErrors(request);
-    	
-    	// Filtra errori login (con prefisso "login_")
-    	for (Map.Entry<String, String> entry : allFieldErrors.entrySet()) {
-    	    if (entry.getKey().startsWith("login_")) {
-    	        // Per compatibilità con template esistente, usa errorMsg
-    	        String cleanKey = entry.getKey().substring(6); // rimuove "login_"
-    	        if ("credentialsError".equals(cleanKey) || "generalError".equals(cleanKey)) {
-    	            ctx.setVariable("errorMsg", entry.getValue());
-    	            break; // Prendi solo il primo errore per semplicità
-    	        }
-    	    }
-    	}
-    	
-		templateEngine.process(path, ctx, response.getWriter());
-	}
-	
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		doGet(request, response);
-	}
+        // === MESSAGGI DI SUCCESSO (es. dalla registrazione) ===
+        List<String> successMessages = FlashMessagesManager.getAndClearSuccessMessages(request);
+        if (successMessages != null && !successMessages.isEmpty()) {
+            ctx.setVariable("successMessage", successMessages.get(0));
+        }
+        
+        // === ACCOUNT DELETED SUCCESS MESSAGE ===
+        // Caso speciale: account cancellato (sessione invalidata, usiamo parametro URL)
+        String accountDeleted = request.getParameter("accountDeleted");
+        if ("true".equals(accountDeleted)) {
+            ctx.setVariable("successMessage", "Account deleted successfully.");
+        }
+        
+        // === LOGOUT SUCCESS MESSAGE ===
+        // Caso speciale: logout (sessione invalidata, usiamo parametro URL)
+        String loggedOut = request.getParameter("loggedOut");
+        if ("true".equals(loggedOut)) {
+            ctx.setVariable("successMessage", "You have been logged out successfully. See you soon!");
+        }
+        
+        // === MESSAGGI DI ERRORE LOGIN ===
+        Map<String, String> allFieldErrors = FlashMessagesManager.getAndClearFieldErrors(request);
+        
+        // Filtra errori login
+        if (allFieldErrors != null) {
+            for (Map.Entry<String, String> entry : allFieldErrors.entrySet()) {
+                String key = entry.getKey();
+                
+                if (!isEmpty(key) && key.startsWith("login_")) {
+                	String cleanKey = key.substring(6); 
+                    if ("credentialsError".equals(cleanKey) || "generalError".equals(cleanKey)) {
+                        ctx.setVariable("errorMsg", entry.getValue());
+                        break;                    }
+                }
+            }
+        }
+    }
+    
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        doGet(request, response);
+    }
 }

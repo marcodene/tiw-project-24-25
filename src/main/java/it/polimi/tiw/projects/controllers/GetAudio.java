@@ -3,7 +3,6 @@ package it.polimi.tiw.projects.controllers;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.UnavailableException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -16,15 +15,33 @@ import java.io.OutputStream;
 import it.polimi.tiw.projects.utils.FileStorageManager;
 
 @WebServlet("/GetAudio/*")
-public class GetAudio extends HttpServlet {
-	private static final long serialVersionUID = 1L;
+public class GetAudio extends ServletBase {
+    private static final long serialVersionUID = 1L;
 
     public GetAudio() {
         super();
     }
     
+    // Override per specificare che NON ha bisogno del database
+    @Override
+    protected boolean needsDatabase() {
+        return false;
+    }
+    
+    // Override per specificare che NON ha bisogno del template engine
+    @Override
+    protected boolean needsTemplateEngine() {
+        return false;
+    }
+    
+    // needsAuth() rimane true (default) - i file audio sono privati
+    
+    @Override
     public void init() throws ServletException {
-        // Inizializza il file storage manager
+        // Chiama l'init della classe base per eventuali inizializzazioni future
+        super.init();
+        
+        // Inizializza il file storage manager specifico per questa servlet
         try {
             FileStorageManager.initialize(getServletContext());
         } catch (UnavailableException e) {
@@ -32,8 +49,9 @@ public class GetAudio extends HttpServlet {
         }
     }
 
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// Check if user is authenticated
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // Controllo autenticazione manuale (appropriato per servlet che servono risorse)
+        // Non usiamo checkLogin() perché fa redirect, mentre qui serve un errore HTTP diretto
         HttpSession session = request.getSession();
         if (session.isNew() || session.getAttribute("user") == null) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Not authorized");
@@ -86,10 +104,9 @@ public class GetAudio extends HttpServlet {
         try (OutputStream out = response.getOutputStream()) {
             Files.copy(audioFile.toPath(), out);
         }
-	}
+    }
 
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		doGet(request, response);
-	}
-
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        doGet(request, response);
+    }
 }

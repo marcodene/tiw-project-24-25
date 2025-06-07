@@ -10,8 +10,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Servlet per servire risorse statiche come CSS e JavaScript
@@ -28,7 +26,7 @@ public class CssServlet extends HttpServlet {
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		String pathInfo = request.getPathInfo();
-        String servletPath = request.getServletPath();
+        //String servletPath = request.getServletPath();
         
         
         if (pathInfo == null || pathInfo.isEmpty() || pathInfo.equals("/")) {
@@ -73,13 +71,13 @@ public class CssServlet extends HttpServlet {
 	/**
      * Estrae l'estensione del file dal nome del file
      */
-    private String getFileExtension(String filename) {
+    /* private String getFileExtension(String filename) {
         int lastDotIndex = filename.lastIndexOf('.');
         if (lastDotIndex > 0) {
             return filename.substring(lastDotIndex + 1).toLowerCase();
         }
         return "";
-    }
+    }*/
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		doGet(request, response);

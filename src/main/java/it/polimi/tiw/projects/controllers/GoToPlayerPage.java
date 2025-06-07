@@ -1,85 +1,50 @@
 package it.polimi.tiw.projects.controllers;
 
-import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.WebContext;
-import org.thymeleaf.templatemode.TemplateMode;
-import org.thymeleaf.templateresolver.WebApplicationTemplateResolver;
-import org.thymeleaf.web.servlet.JakartaServletWebApplication;
 
 import it.polimi.tiw.projects.beans.Song;
 import it.polimi.tiw.projects.beans.User;
 import it.polimi.tiw.projects.dao.SongDAO;
-import it.polimi.tiw.projects.utils.ConnectionHandler;
-import it.polimi.tiw.projects.utils.FlashMessagesManager;
 
 @WebServlet("/GoToPlayerPage")
-public class GoToPlayerPage extends HttpServlet {
-	private static final long serialVersionUID = 1L;
-	private Connection connection = null;
-    private TemplateEngine templateEngine;
+public class GoToPlayerPage extends ServletBase {
+    private static final long serialVersionUID = 1L;
     
     public GoToPlayerPage() {
         super();
-    }
-    
-    public void init() throws ServletException {
-    	ServletContext servletContext = getServletContext();
-		JakartaServletWebApplication webApplication = JakartaServletWebApplication.buildApplication(servletContext);     
-		WebApplicationTemplateResolver templateResolver = new WebApplicationTemplateResolver(webApplication);
-		templateResolver.setTemplateMode(TemplateMode.HTML);
-		this.templateEngine = new TemplateEngine();
-		this.templateEngine.setTemplateResolver(templateResolver);
-		templateResolver.setSuffix(".html");
-		connection = ConnectionHandler.getConnection(getServletContext());
-    }
+    }    
 
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// If the user is not logged in (not present in session) redirect to the login
-    	String loginpath = getServletContext().getContextPath(); // path to the loginPage
-    	HttpSession session = request.getSession();
-    	if(session.isNew() || session.getAttribute("user")==null) {
-    		response.sendRedirect(loginpath);
-    		return;
-    	}
-    	
-    	User user = (User) session.getAttribute("user");
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // Controllo autenticazione 
+        User user = checkLogin(request, response);
+        if (user == null) {
+            return;
+        }
         
-        // Mappa per messaggi di errore strutturati (pattern PRG standard)
+        // Mappa per messaggi di errore 
         Map<String, String> errorMessages = new HashMap<>();
         boolean hasErrors = false;
         
-        // Get the playlist ID for back navigation (optional)
+        // Get the playlist ID for back navigation
         String playlistId = request.getParameter("playlistId");
         
-        // Get song ID from request (required)
-        String songIDStr = request.getParameter("songID");
-        if (songIDStr == null || songIDStr.isEmpty()) {
+        // Parsing parametri
+        int songID = getIntParam(request, "songID");
+        
+        // Validazione 
+        if (songID == -1) {
             errorMessages.put("generalError", "Song ID is required to play a song");
             hasErrors = true;
-        }
-        
-        int songID = -1;
-        if (!hasErrors) {
-            try {
-                songID = Integer.parseInt(songIDStr);
-            } catch (NumberFormatException e) {
-                errorMessages.put("generalError", "Invalid song ID format");
-                hasErrors = true;
-            }
         }
         
         Song song = null;
@@ -103,68 +68,54 @@ public class GoToPlayerPage extends HttpServlet {
             }
         }
         
-        // PATTERN POST-REDIRECT-GET: Se ci sono errori, redirect con flash messages
+        // PATTERN POST-REDIRECT-GET
         if (hasErrors) {
-            // Aggiungi errori ai flash messages
-            FlashMessagesManager.addFieldErrors(request, errorMessages);
-            
-            // REDIRECT INTELLIGENTE basato su dove dovremmo tornare
-            String redirectPath;
-            if (playlistId != null && !playlistId.isEmpty()) {
-                // Se abbiamo playlistId, torna alla playlist
-                redirectPath = getServletContext().getContextPath() + "/GoToPlaylistPage?playlistId=" + playlistId;
-            } else {
-                // Altrimenti, torna alla home
-                redirectPath = getServletContext().getContextPath() + "/Home";
-            }
-            
-            response.sendRedirect(redirectPath);
+        	
+        	String redirectPath = determineRedirectPath(playlistId);
+            doRedirect(request, response, redirectPath, null, errorMessages, null);
             return;
         }
-        
-        // Se arriviamo qui, tutto è andato bene - mostra la pagina del player
+
         try {
-            // Set up template context
-            String path = "/WEB-INF/PlayerPage.html";
-            ServletContext servletContext = getServletContext();
-            JakartaServletWebApplication webApplication = JakartaServletWebApplication.buildApplication(getServletContext());
-            WebContext ctx = new WebContext(webApplication.buildExchange(request, response), request.getLocale());
+            // Creazione WebContext
+            WebContext ctx = createContext(request, response);
             
             ctx.setVariable("song", song);
-            if (playlistId != null && !playlistId.isEmpty()) {
+            if (!isEmpty(playlistId)) {
                 ctx.setVariable("playlistId", playlistId);
             }
             
-            templateEngine.process(path, ctx, response.getWriter());
+            // Rendering
+            String templatePath = "/WEB-INF/PlayerPage.html";
+            templateEngine.process(templatePath, ctx, response.getWriter());
             
         } catch (Exception e) {
-            // Se c'è un errore nel rendering del template, gestiscilo con flash message
+            // Se c'è un errore gestisco con flash message
             Map<String, String> renderErrorMessages = new HashMap<>();
             renderErrorMessages.put("generalError", "Error displaying the player page: " + e.getMessage());
-            FlashMessagesManager.addFieldErrors(request, renderErrorMessages);
             
-            // Redirect appropriato
-            String redirectPath;
-            if (playlistId != null && !playlistId.isEmpty()) {
-                redirectPath = getServletContext().getContextPath() + "/GoToPlaylistPage?playlistId=" + playlistId;
-            } else {
-                redirectPath = getServletContext().getContextPath() + "/Home";
-            }
-            
-            response.sendRedirect(redirectPath);
+            // Redirect
+            String redirectPath = determineRedirectPath(playlistId);
+            doRedirect(request, response, redirectPath, null, renderErrorMessages, null);
             e.printStackTrace();
         }
-	}
+    }
+    
+    /**
+     * Determina il percorso di redirect intelligente basato sulla presenza del playlistId
+     * Estrae la logica di redirect per evitare duplicazione
+     */
+    private String determineRedirectPath(String playlistId) {
+        if (!isEmpty(playlistId)) {
+            // Se abbiamo playlistId, torna alla playlist
+            return getServletContext().getContextPath() + "/GoToPlaylistPage?playlistId=" + playlistId;
+        } else {
+            // Altrimenti, torna alla home
+            return getServletContext().getContextPath() + "/Home";
+        }
+    }
 
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		doGet(request, response);
-	}
-	
-	public void destroy() {
-        try {
-            ConnectionHandler.closeConnection(connection);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        doGet(request, response);
     }
 }

@@ -3,7 +3,6 @@ package it.polimi.tiw.projects.controllers;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.UnavailableException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -11,21 +10,35 @@ import jakarta.servlet.http.HttpSession;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.io.OutputStream;
 
 import it.polimi.tiw.projects.utils.FileStorageManager;
 
-import java.io.OutputStream;
-
 @WebServlet("/GetImage/*")
-public class GetImage extends HttpServlet {
-	private static final long serialVersionUID = 1L;
+public class GetImage extends ServletBase {
+    private static final long serialVersionUID = 1L;
     
     public GetImage() {
         super();
     }
     
+    // Override per specificare che NON ha bisogno del database
+    @Override
+    protected boolean needsDatabase() {
+        return false;
+    }
+    
+    // Override per specificare che NON ha bisogno del template engine
+    @Override
+    protected boolean needsTemplateEngine() {
+        return false;
+    }
+    
+    @Override
     public void init() throws ServletException {
-        // Inizializza il file storage manager
+        super.init();
+        
+        // Inizializza il file storage manager specifico per questa servlet
         try {
             FileStorageManager.initialize(getServletContext());
         } catch (UnavailableException e) {
@@ -33,8 +46,9 @@ public class GetImage extends HttpServlet {
         }
     }
 
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		// Controlla se l'utente è autenticato
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // Controllo autenticazione manuale (appropriato per servlet che servono risorse)
+        // Non usiamo checkLogin() perché fa redirect, mentre qui serve un errore HTTP diretto
         HttpSession session = request.getSession();
         if (session.isNew() || session.getAttribute("user") == null) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Non autorizzato");
@@ -86,10 +100,9 @@ public class GetImage extends HttpServlet {
         try (OutputStream out = response.getOutputStream()) {
             Files.copy(imageFile.toPath(), out);
         }
-	}
+    }
 
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		doGet(request, response);
-	}
-
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        doGet(request, response);
+    }
 }
