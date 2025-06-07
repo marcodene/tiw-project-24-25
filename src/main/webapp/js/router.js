@@ -30,6 +30,13 @@ const Router = (() => {
                 appContentContainer.innerHTML = '<h2>Player View (Component not fully loaded)</h2>';
             }
         },
+        'account': (data) => {
+            if (typeof AccountManager !== 'undefined' && AccountManager.render) {
+                AccountManager.render(appContentContainer, data);
+            } else {
+                appContentContainer.innerHTML = '<h2>Account Management View (Component not fully loaded)</h2>';
+            }
+        },
         // Add more routes as needed, e.g., 'uploadSongForm', 'createPlaylistForm'
         // These might be part of 'home' or separate components.
     };

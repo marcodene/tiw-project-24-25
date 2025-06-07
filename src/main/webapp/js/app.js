@@ -31,11 +31,11 @@ const App = (() => {
             logoutButton.setAttribute('listener-attached', 'true');
         }
         
-        // Setup account button (placeholder functionality)
+        // Setup account button
         const accountButton = document.getElementById('accountButton');
         if (accountButton && !accountButton.hasAttribute('listener-attached')) {
             accountButton.addEventListener('click', () => {
-                alert('Account management not implemented yet');
+                Router.navigateTo('account');
             });
             accountButton.setAttribute('listener-attached', 'true');
         }
