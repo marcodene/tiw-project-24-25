@@ -104,10 +104,3 @@ const App = (() => {
         reset
     };
 })();
-
-// Modify Auth.js to call State.resetState() on logout and App.reset()
-// This part is tricky as subtasks don't easily modify multiple files based on conditions.
-// We'll assume Auth.handleLogout will be updated to include:
-// State.resetState(); App.reset(); // before showing login form.
-// For now, App.reset() calls State.resetState().
-// And Auth.handleLogout in auth.js already calls App.reset().

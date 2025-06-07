@@ -26,7 +26,7 @@ const PlaylistComponent = (() => {
 	    // Show loading while fetching details
 	    container.innerHTML = '<p>Loading playlist...</p>';
 	    
-	    // GET REQUEST FOR COMPLETE PLAYLIST DETAILS
+	    // Get request for complete playlist data
 	    makeCall('GET', `/api/playlists/${playlist.ID}`, null, (req) => {
 	        if (req.readyState === XMLHttpRequest.DONE) {
 	            if (req.status === 200) {
@@ -96,9 +96,6 @@ const PlaylistComponent = (() => {
             sectionElement.innerHTML += '<p>This playlist is empty.</p>';
             return;
         }
-        
-        // Apply custom order if present (songs in currentPlaylistObj.songs should already be ordered by DAO)
-        // The DAO now returns songs in the correct order (custom or default).
 
         const songsToDisplay = currentPlaylistObj.songs;
         const totalSongs = songsToDisplay.length;

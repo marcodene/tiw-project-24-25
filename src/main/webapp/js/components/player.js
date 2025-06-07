@@ -82,10 +82,6 @@ const PlayerComponent = (() => {
         
         const audioEl = document.createElement('audio');
         audioEl.controls = true;
-        // Assuming audioFilePath is relative to '/uploads/'
-        // e.g., "songs/xxxxxxxx-xxxx.mp3"
-        // The base path should be handled by the server or a reverse proxy correctly.
-        // If audioFilePath is stored as "songs/file.mp3", then src should be "/uploads/songs/file.mp3"
         audioEl.src = currentSongObj.audioFilePath ? `${baseURL}/GetFile${currentSongObj.audioFilePath}`  : '';
         audioEl.id = 'html5-audio-player';
         
