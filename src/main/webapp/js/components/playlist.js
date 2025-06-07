@@ -240,8 +240,7 @@ const PlaylistComponent = (() => {
         }
 
         const payload = { songIDs: songIDsToAdd };
-        // Use the overridden makeCall for JSON if it's still in Home.js, or use a proper JSON utility
-        // Assuming makeCall from utils.js is now capable or we have a makeJsonCall
+      
         makeCall('POST', `/api/playlists/${currentPlaylistObj.ID}/songs`, JSON.stringify(payload), (req) => {
             if (req.readyState === XMLHttpRequest.DONE) {
                 try {
@@ -263,8 +262,7 @@ const PlaylistComponent = (() => {
                     messageArea.className = 'message-area error';
                 }
             }
-        }, false); // Assuming makeCall can handle JSON if data is string and Content-Type is set by it
-                   // Need to ensure makeCall sets Content-Type for JSON string.
+        }, false); 
     };
 	
 	// Subscription for when current playlist is modified

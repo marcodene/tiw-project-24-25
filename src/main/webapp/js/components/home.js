@@ -227,8 +227,6 @@ const Home = (() => {
                         messageArea.className = 'message-area success';
                         State.updatePlaylist(response.data); // Add to global playlists
                         form.reset();
-                        // Re-render create playlist form to clear checkboxes (or form.reset() handles it)
-                        // If State.getSongs() is used by create playlist form, it's already up-to-date.
                     } else {
                         messageArea.textContent = `Error: ${response.message || 'Creation failed.'} ${response.errors ? JSON.stringify(response.errors) : ''}`;
                         messageArea.className = 'message-area error';
@@ -238,9 +236,7 @@ const Home = (() => {
                      messageArea.className = 'message-area error';
                 }
             }
-        }, false); // Send JSON, so formElement is null and reset is false.
-                  // Overload makeCall or use a different function for JSON payloads
-                  // For now, adapting makeCall to send stringified payload (needs header set)
+        }, false);
     };
     
     /**
