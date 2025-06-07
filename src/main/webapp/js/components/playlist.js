@@ -115,7 +115,7 @@ const PlaylistComponent = (() => {
             const songCard = document.createElement('div');
             songCard.className = 'song-card';
             // Use a placeholder if albumCoverPath is null or empty
-            const coverPath = song.albumCoverPath ? `${baseURL}/GetFile${song.albumCoverPath}` : '/covers/default.jpg'; // Adjust default path
+            const coverPath = `${baseURL}/GetFile${song.albumCoverPath}`;
             songCard.innerHTML = `
                 <img src="${coverPath}" alt="${song.albumName}" width="100" height="100" style="object-fit: cover;">
                 <h4>${song.name}</h4>

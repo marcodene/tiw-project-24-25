@@ -8,58 +8,6 @@ const Auth = (() => {
 	let loginFormContainer, registerFormContainer, authContainer, appContainer, errorMessageElement;
 
 	/**
-	 * Initializes authentication module for home page
-	 * Called at application startup to set up authentication containers and check session
-	 * Sets up DOM references and triggers session validation
-	 */
-	const init = () => {
-		loginFormContainer = document.getElementById(loginFormContainerId);
-		registerFormContainer = document.getElementById(registerFormContainerId);
-		authContainer = document.getElementById(authContainerId);
-		appContainer = document.getElementById(appContainerId);
-		errorMessageElement = document.getElementById(errorMessageElementId);
-
-		// Check initial auth status via API call
-		checkSessionAndSetup();
-	};
-
-	/**
-	 * Validates current user session with server and initializes appropriate interface
-	 * Called by init() to determine if user is authenticated
-	 * Redirects to app or shows login form based on session status
-	 */
-	const checkSessionAndSetup = () => {
-	    makeCall('GET', '/api/checkAuth', null, (req) => {
-	        if (req.readyState === XMLHttpRequest.DONE) {
-	            try {
-	                const response = JSON.parse(req.responseText);
-	                
-	                if (req.status === 200 && response.status === 'success') {
-	                    // Valid session found
-	                    console.log("User session found, initializing app.");
-	                    
-	                    // Optional: save to sessionStorage for local copy
-	                    SessionManager.setUser(response.data);
-	                    
-	                    showApp();
-	                    App.init(response.data); // Initialize application with user data
-	                } else {
-	                    // No session found or error
-	                    console.log("No active session, showing login form.");
-	                    showLoginForm();
-	                    setupEventListeners();
-	                }
-	            } catch (e) {
-	                // Error parsing JSON response
-	                console.error("Error parsing authentication response:", e);
-	                showLoginForm();
-	                setupEventListeners();
-	            }
-	        }
-	    });
-	};
-
-	/**
 	 * Displays the login form interface
 	 * Called when no valid session exists or user needs to authenticate
 	 * Creates login form HTML and sets up event listeners
@@ -254,24 +202,6 @@ const Auth = (() => {
 	};
 
 	/**
-	 * Sets up event listeners for authentication-related UI elements
-	 * Called after showing login form or during authentication module initialization
-	 * Attaches logout button listener if available, warns if not found for dynamic setup
-	 */
-	//TODO capire se si può togliere
-	const setupEventListeners = () => {
-		// Event listeners for forms are set up when they are shown
-		// Add listener for logout button if it's part of the main app structure visible after login
-		const logoutButton = document.getElementById('logoutButton');
-		if (logoutButton) {
-			logoutButton.addEventListener('click', handleLogout);
-		} else {
-			// If app structure is dynamic, logout button listener might need to be added in App.init()
-			console.warn("Logout button not found during Auth.init. Ensure it's available or attached later.");
-		}
-	};
-
-	/**
 	 * Displays error messages to the user in the authentication interface
 	 * Called when form validation fails or server returns error responses
 	 * Shows red-styled error message in the designated error message element
@@ -374,13 +304,11 @@ const Auth = (() => {
 				// No valid session, show login form
 				console.log("No active session, showing login form.");
 				showLoginForm();
-				setupEventListeners();
 			}
 		}).catch(error => {
 			// Error during session check, show login form
 			console.log("Error parsing authentication response, showing login form.", error);
 			showLoginForm();
-			setupEventListeners();
 		});
 	};
 
@@ -407,12 +335,10 @@ const Auth = (() => {
 	};
 
 	return {
-		init,
 		initLoginPage,
 		showLoginForm,
 		showRegisterForm,
 		handleLogout, // Expose logout to be callable from App.js if needed
-		checkSessionAndSetup, // Expose for potential re-check
 		checkSessionForHomePage
 	};
 })();

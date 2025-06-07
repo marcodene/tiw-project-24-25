@@ -319,26 +319,28 @@ public class SongServletRIA extends HttpServlet {
             filePaths.put("audioPath", relativeAudioPath);
         }
 
-        // Save image file (if provided)
-        if (imageFilePart != null && imageFilePart.getSize() > 0) {
-            String imageFileName = getUniqueFileName(imageFilePart.getSubmittedFileName());
-            String coverImagesDir = FileStorageManager.getCoverImagesPath(); // Full path for saving
-            File imageUploadDir = new File(coverImagesDir);
-            if (!imageUploadDir.exists()) imageUploadDir.mkdirs();
-            File imageFile = new File(imageUploadDir, imageFileName);
-            
-            try (InputStream input = imageFilePart.getInputStream()) {
-                Files.copy(input, imageFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                // Store ONLY the relative path
-                String relativeImagePath = "/covers/" + imageFileName;
-                filePaths.put("imagePath", relativeImagePath);
-            } catch (IOException e) {
-                // If image saving fails, clean up audio file and throw exception
-                if (audioFile.exists()) audioFile.delete();
-                throw e;
-            }
-        }
+        // Save image file (if not provided usa a default cover)
+    	String imageFileName;
+    	if(imageFilePart != null && imageFilePart.getSize() > 0)
+    		imageFileName = getUniqueFileName(imageFilePart.getSubmittedFileName());
+    	else
+    		imageFileName = "default.jpg";
+        String coverImagesDir = FileStorageManager.getCoverImagesPath(); // Full path for saving
+        File imageUploadDir = new File(coverImagesDir);
+        if (!imageUploadDir.exists()) imageUploadDir.mkdirs();
+        File imageFile = new File(imageUploadDir, imageFileName);
         
+        try (InputStream input = imageFilePart.getInputStream()) {
+            Files.copy(input, imageFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            // Store ONLY the relative path
+            String relativeImagePath = "/covers/" + imageFileName;
+            filePaths.put("imagePath", relativeImagePath);
+        } catch (IOException e) {
+            // If image saving fails, clean up audio file and throw exception
+            if (audioFile.exists()) audioFile.delete();
+            throw e;
+        }
+    
         return filePaths;
     }
 

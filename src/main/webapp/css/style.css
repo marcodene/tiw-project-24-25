@@ -190,8 +190,9 @@ form div { /* Generic div inside form, for label-input pairs */
 }
 
 label {
-  display: block;
+  display: inline;
   margin-bottom: 0.5rem;
+  margin-left: 0.2rem;
   font-weight: 500;
   color: var(--text-color-secondary);
 }
@@ -279,6 +280,54 @@ button:hover, input[type="button"]:hover {
   background-color: rgba(255, 91, 76, 0.15);
   color: var(--accent-color);
   border-left: 3px solid var(--accent-color);
+}
+
+/* Error message styling (from Pure HTML project) */
+.error-message {
+  color: var(--accent-color);
+  font-size: 0.9rem;
+  margin-top: 6px;
+  padding-left: 10px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+/* Success message styling (from Pure HTML project) */
+.success-message {
+  color: #4caf50;
+  background-color: rgba(76, 175, 80, 0.08);
+  padding: 16px;
+  border-radius: var(--border-radius-md);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  border-left: 3px solid #4caf50;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  font-weight: 500;
+}
+
+.success-message::before {
+  content: "✓";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-right: 10px;
+  height: 20px;
+  width: 20px;
+  font-size: 12px;
+  border-radius: 50%;
+  background-color: #4caf50;
+  color: white;
+}
+
+.success-message p {
+  color: #4caf50;
+  margin: 0;
 }
 
 
@@ -874,8 +923,9 @@ audio::-webkit-media-controls-timeline {
 }
 
 .form-group label {
-    display: block;
+    display: inline;
     margin-bottom: 0.5rem;
+    margin-left: 0.2rem;
     color: var(--text-color-secondary);
     font-weight: 500;
 }
