@@ -22,17 +22,21 @@
                 </form>
                 <a th:href="@{/Logout}" class="logout-btn">Logout</a>
             </div>
-
         </header>
+        
+        <!-- FLASH MESSAGES: Messaggio di successo -->
+        <div th:if="${successMessage != null}" class="success-message">
+            <p th:text="${successMessage}"></p>
+        </div>
+        
+        <!-- FLASH MESSAGES: Errori generali (da altre servlet come GoToPlayerPage) -->
+        <div th:if="${errorMessages != null and errorMessages.containsKey('generalError')}" 
+             class="error-general">
+            <p th:text="${errorMessages.get('generalError')}"></p>
+        </div>
         
         <!-- Songs Display Section -->
         <section class="section">
-        	
-        	<div th:if="${generalError}" 
-                 class="error-message error-general">
-                <p th:text="${generalError}"></p>
-            </div>
-            
             <div class="card">
                 <div class="card-header">
                     <h2>Songs in this Playlist</h2>
@@ -125,18 +129,33 @@
                     <h2>Add Songs to Playlist</h2>
                 </div>
                 
+                <!-- FLASH MESSAGES: Errore generale per Add Songs -->
+                <div th:if="${errorMessages != null and errorMessages.containsKey('generalError')}" 
+                     class="error-general">
+                    <p th:text="${errorMessages.get('generalError')}"></p>
+                </div>
+                
                 <form th:action="@{/AddSongsToPlaylist}" method="POST">
                     <input type="hidden" name="playlistId" th:value="${playlist.ID}">
                     
                     <div class="form-group">
                         <label for="selectedSongs">Select songs to add:</label>
-                        <select id="selectedSongs" name="selectedSongs" multiple size="10">
+                        <select id="selectedSongs" name="selectedSongs" multiple size="10"
+                                th:class="${errorMessages != null and errorMessages.containsKey('songsError') ? 'form-field-error' : ''}">
                             <option th:each="song : ${availableSongs}" 
                                     th:value="${song.ID}" 
                                     th:text="${song.name + ' - ' + song.artistName + ' (' + song.albumName + ', ' + song.albumReleaseYear + ')'}">
                             </option>
                         </select>
                         <small>Hold Ctrl (Cmd on Mac) to select multiple songs</small>
+                        
+                        <!-- FLASH MESSAGES: Errori specifici per selezione canzoni -->
+                        <div th:if="${errorMessages != null and errorMessages.containsKey('songsError')}" 
+                             class="error-message" th:text="${errorMessages.get('songsError')}"></div>
+                        
+                        <!-- FLASH MESSAGES: Errori specifici per playlist -->
+                        <div th:if="${errorMessages != null and errorMessages.containsKey('playlistError')}" 
+                             class="error-message" th:text="${errorMessages.get('playlistError')}"></div>
                     </div>
                     
                     <button type="submit">Add Selected Songs</button>

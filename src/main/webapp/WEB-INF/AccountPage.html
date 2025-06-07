@@ -38,6 +38,12 @@
                     <h2>Delete Account</h2>
                 </div>
                 
+                <!-- FLASH MESSAGES: Mostra errore generale se presente -->
+                <div th:if="${errorMessages != null and errorMessages.containsKey('generalError')}" 
+                     class="error-message error-general">
+                    <p th:text="${errorMessages.get('generalError')}"></p>
+                </div>
+                
                 <div class="warning-box">
                     <p><strong>Warning:</strong> This action cannot be undone. Deleting your account will permanently remove:</p>
                     <ul>
@@ -50,9 +56,13 @@
                 <form th:action="@{/DeleteUser}" method="POST">
                     <div class="form-group">
                         <label for="password">Confirm your password to continue:</label>
-                        <input type="password" id="password" name="password" required>
-                        <div th:if="${deleteAccountError != null}" 
-                                 class="error-message" th:text="${deleteAccountError}"></div>
+                        <input type="password" id="password" name="password" 
+                               th:class="${errorMessages != null and errorMessages.containsKey('passwordError') ? 'form-field-error' : ''}"
+                               required>
+                        
+                        <!-- FLASH MESSAGES: Errore specifico password -->
+                        <div th:if="${errorMessages != null and errorMessages.containsKey('passwordError')}" 
+                             class="error-message" th:text="${errorMessages.get('passwordError')}"></div>
                     </div>
                     
                     <div class="form-actions">

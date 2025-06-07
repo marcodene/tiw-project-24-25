@@ -18,7 +18,6 @@ import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.WebApplicationTemplateResolver;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
 
-import it.polimi.tiw.projects.utils.ConnectionHandler;
 import it.polimi.tiw.projects.utils.FlashMessagesManager;
 
 
@@ -61,6 +60,20 @@ public class GoToLoginPage extends HttpServlet {
     	List<String> successMessages = FlashMessagesManager.getAndClearSuccessMessages(request);
     	if (!successMessages.isEmpty()) {
     	    ctx.setVariable("successMessage", successMessages.get(0));
+    	}
+    	
+    	// === ACCOUNT DELETED SUCCESS MESSAGE ===
+    	// Caso speciale: account cancellato (sessione invalidata, usiamo parametro URL)
+    	String accountDeleted = request.getParameter("accountDeleted");
+    	if ("true".equals(accountDeleted)) {
+    	    ctx.setVariable("successMessage", "Account deleted successfully. Thank you for using our service.");
+    	}
+    	
+    	// === LOGOUT SUCCESS MESSAGE ===
+    	// Caso speciale: logout (sessione invalidata, usiamo parametro URL)
+    	String loggedOut = request.getParameter("loggedOut");
+    	if ("true".equals(loggedOut)) {
+    	    ctx.setVariable("successMessage", "You have been logged out successfully. See you soon!");
     	}
     	
     	// === MESSAGGI DI ERRORE LOGIN ===

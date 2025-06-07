@@ -19,14 +19,24 @@ public class Logout extends HttpServlet {
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		HttpSession session = request.getSession(false);
-		if(session != null)
+		
+		// Se la sessione esiste, invalida e fai logout con messaggio
+		if(session != null) {
+			// Invalidare la sessione cancella anche i flash messages,
+			// quindi usiamo parametro URL come per account deletion
 			session.invalidate();
-		String path = getServletContext().getContextPath(); // path to the loginPage
-		response.sendRedirect(path);
+			
+			// Redirect alla login page con messaggio di logout
+			String loginPath = getServletContext().getContextPath() + "/?loggedOut=true";
+			response.sendRedirect(loginPath);
+		} else {
+			// Se non c'è sessione, vai semplicemente al login
+			String loginPath = getServletContext().getContextPath() + "/";
+			response.sendRedirect(loginPath);
+		}
 	}
 
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		doGet(request, response);
 	}
-
 }

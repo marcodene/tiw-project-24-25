@@ -10,13 +10,16 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import it.polimi.tiw.projects.beans.User;
 import it.polimi.tiw.projects.dao.PlaylistDAO;
 import it.polimi.tiw.projects.dao.SongDAO;
 import it.polimi.tiw.projects.utils.ConnectionHandler;
+import it.polimi.tiw.projects.utils.FlashMessagesManager;
 
 @WebServlet("/AddSongsToPlaylist")
 public class AddSongsToPlaylist extends HttpServlet {
@@ -44,7 +47,11 @@ public class AddSongsToPlaylist extends HttpServlet {
         PlaylistDAO playlistDAO = new PlaylistDAO(connection);
         SongDAO songDAO = new SongDAO(connection);
         
-        boolean isBadRequest = false;
+        // Mappa per messaggi di errore strutturati (pattern PRG standard)
+        Map<String, String> errorMessages = new HashMap<>();
+        boolean hasErrors = false;
+        String successMessage = null;
+        
         String playlistIdStr = null;
         int[] selectedSongIDs = null;
         String[] selectedSongIDStrings = null;
@@ -54,14 +61,22 @@ public class AddSongsToPlaylist extends HttpServlet {
         	playlistIdStr = request.getParameter("playlistId");
         	selectedSongIDStrings = request.getParameterValues("selectedSongs");
             
+            // Validazione playlistId
             if (playlistIdStr == null || playlistIdStr.isEmpty()) {
-                isBadRequest = true;
+                errorMessages.put("addSongs_playlistError", "Playlist ID is required");
+                hasErrors = true;
             } else {
-                playlistId = Integer.parseInt(playlistIdStr);
+                try {
+                    playlistId = Integer.parseInt(playlistIdStr);
+                } catch (NumberFormatException e) {
+                    errorMessages.put("addSongs_playlistError", "Invalid playlist ID format");
+                    hasErrors = true;
+                }
             }
             
+            // Validazione selezione canzoni
             if (selectedSongIDStrings == null || selectedSongIDStrings.length == 0) {
-                // No songs selected, redirect back to playlist page
+                // No songs selected, redirect back to playlist page without error
                 String playlistPagePath = getServletContext().getContextPath() + 
                     "/GoToPlaylistPage?playlistId=" + playlistId;
                 response.sendRedirect(playlistPagePath);
@@ -69,71 +84,84 @@ public class AddSongsToPlaylist extends HttpServlet {
             }
             
             // Parse degli ID delle canzoni
-            selectedSongIDs = new int[selectedSongIDStrings.length];
-            try {
-                for (int i = 0; i < selectedSongIDStrings.length; i++) {
-                    selectedSongIDs[i] = Integer.parseInt(selectedSongIDStrings[i]);
+            if (!hasErrors) {
+                selectedSongIDs = new int[selectedSongIDStrings.length];
+                try {
+                    for (int i = 0; i < selectedSongIDStrings.length; i++) {
+                        selectedSongIDs[i] = Integer.parseInt(selectedSongIDStrings[i]);
+                    }
+                } catch (NumberFormatException e) {
+                    errorMessages.put("addSongs_songsError", "Invalid song ID format");
+                    hasErrors = true;
                 }
-            } catch (NumberFormatException e) {
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, 
-                    "Invalid song ID format");
-                return;
             }
             
             // Check for duplicates in selected songs
-            if (containsDuplicates(selectedSongIDs)) {
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, 
-                    "Cannot select the same song multiple times");
-                return;
+            if (!hasErrors && containsDuplicates(selectedSongIDs)) {
+                errorMessages.put("addSongs_songsError", "Cannot select the same song multiple times");
+                hasErrors = true;
             }
             
-            // Verify playlist belongs to user
-            if (playlistDAO.getPlaylistByIdAndUser(playlistId, user.getId()) == null) {
-                response.sendError(HttpServletResponse.SC_NOT_FOUND, 
-                    "Playlist not found or access denied");
-                return;
-            }
-            
-            // Verify all selected songs belong to user
-            if (!songDAO.existAllSongsByIDsAndUser(selectedSongIDs, user.getId())) {
-                response.sendError(HttpServletResponse.SC_BAD_REQUEST, 
-                    "All selected songs must belong to you");
-                return;
+            // Verifiche di sicurezza e business logic
+            if (!hasErrors) {
+                try {
+                    // Verify playlist belongs to user
+                    if (playlistDAO.getPlaylistByIdAndUser(playlistId, user.getId()) == null) {
+                        errorMessages.put("addSongs_playlistError", "Playlist not found or access denied");
+                        hasErrors = true;
+                    }
+                    
+                    // Verify all selected songs belong to user
+                    if (!hasErrors && !songDAO.existAllSongsByIDsAndUser(selectedSongIDs, user.getId())) {
+                        errorMessages.put("addSongs_songsError", "All selected songs must belong to you");
+                        hasErrors = true;
+                    }
+                } catch (SQLException e) {
+                    errorMessages.put("addSongs_generalError", "Error verifying playlist and songs: " + e.getMessage());
+                    hasErrors = true;
+                    e.printStackTrace();
+                }
             }
              
-        } catch (NumberFormatException e) {
-            isBadRequest = true;
-        } catch (SQLException e) {
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, 
-                "Error verifying playlist and songs");
-            return;
-        }
-        
-        if (isBadRequest) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, 
-                "Incorrect or missing parameters");
-            return;
-        }
-        
-        
-        try {
-            // Add songs to playlist
-        	boolean success = playlistDAO.addSongsToPlaylist(playlistId, selectedSongIDs, user.getId());
-            
-            if (!success) {
-                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, 
-                    "Failed to add songs to playlist");
-                return;
-            }
-            
-        } catch (SQLException e) {
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, 
-                "Error adding songs to playlist");
+        } catch (Exception e) {
+            errorMessages.put("addSongs_generalError", "Error processing request: " + e.getMessage());
+            hasErrors = true;
             e.printStackTrace();
-            return;
         }
         
-        // Redirect back to playlist page (first page to see the updated playlist)
+        // Se non ci sono errori, procedi con l'aggiunta delle canzoni
+        if (!hasErrors) {
+            try {
+                // Add songs to playlist
+            	boolean success = playlistDAO.addSongsToPlaylist(playlistId, selectedSongIDs, user.getId());
+                
+                if (!success) {
+                    errorMessages.put("addSongs_generalError", "Failed to add songs to playlist");
+                    hasErrors = true;
+                } else {
+                    successMessage = "Songs added to playlist successfully!";
+                }
+                
+            } catch (SQLException e) {
+                errorMessages.put("addSongs_generalError", "Error adding songs to playlist: " + e.getMessage());
+                hasErrors = true;
+                e.printStackTrace();
+            }
+        }
+        
+        // PATTERN POST-REDIRECT-GET: Gestione flash messages
+        
+        // Aggiungi messaggio di successo
+        if (successMessage != null) {
+            FlashMessagesManager.addSuccessMessage(request, successMessage);
+        }
+        
+        // Aggiungi errori strutturati
+        if (!errorMessages.isEmpty()) {
+            FlashMessagesManager.addFieldErrors(request, errorMessages);
+        }
+        
+        // SEMPRE redirect, mai forward (pattern PRG)
         String playlistPagePath = getServletContext().getContextPath() + 
             "/GoToPlaylistPage?playlistId=" + playlistId;
         response.sendRedirect(playlistPagePath);
@@ -162,5 +190,4 @@ public class AddSongsToPlaylist extends HttpServlet {
             e.printStackTrace();
         }
     }
-
 }

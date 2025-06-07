@@ -11,6 +11,8 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.WebContext;
@@ -18,8 +20,8 @@ import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.WebApplicationTemplateResolver;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
 
-import it.polimi.tiw.projects.beans.User;
 import it.polimi.tiw.projects.utils.ConnectionHandler;
+import it.polimi.tiw.projects.utils.FlashMessagesManager;
 
 @WebServlet("/Account")
 public class GoToAccountPage extends HttpServlet {
@@ -57,9 +59,24 @@ public class GoToAccountPage extends HttpServlet {
         JakartaServletWebApplication webApplication = JakartaServletWebApplication.buildApplication(getServletContext());
         WebContext ctx = new WebContext(webApplication.buildExchange(request, response), request.getLocale());
         
-        // Pass any error messages
-        if (request.getAttribute("deleteAccountError") != null) {
-            ctx.setVariable("deleteAccountError", request.getAttribute("deleteAccountError"));
+        // PATTERN POST-REDIRECT-GET: Leggi i flash messages dalla sessione
+        
+        // Recupera e rimuove gli errori strutturati per campo
+        Map<String, String> allFieldErrors = FlashMessagesManager.getAndClearFieldErrors(request);
+        
+        // Filtra errori account (con prefisso "account_")
+        Map<String, String> accountFieldErrors = new HashMap<>();
+        for (Map.Entry<String, String> entry : allFieldErrors.entrySet()) {
+            if (entry.getKey().startsWith("account_")) {
+                // Rimuovi prefisso "account_" per compatibilità template
+                String cleanKey = entry.getKey().substring(8); // rimuove "account_"
+                accountFieldErrors.put(cleanKey, entry.getValue());
+            }
+        }
+        
+        // Imposta variabili per template
+        if (!accountFieldErrors.isEmpty()) {
+            ctx.setVariable("errorMessages", accountFieldErrors);
         }
         
         templateEngine.process(path, ctx, response.getWriter());

@@ -11,7 +11,9 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.WebContext;
@@ -24,6 +26,7 @@ import it.polimi.tiw.projects.beans.Song;
 import it.polimi.tiw.projects.beans.User;
 import it.polimi.tiw.projects.dao.PlaylistDAO;
 import it.polimi.tiw.projects.utils.ConnectionHandler;
+import it.polimi.tiw.projects.utils.FlashMessagesManager;
 
 @WebServlet("/GoToPlaylistPage")
 public class GoToPlaylistPage extends HttpServlet {
@@ -38,7 +41,8 @@ public class GoToPlaylistPage extends HttpServlet {
     
     public void init() throws ServletException {
         ServletContext servletContext = getServletContext();
-		JakartaServletWebApplication webApplication = JakartaServletWebApplication.buildApplication(servletContext);     WebApplicationTemplateResolver templateResolver = new WebApplicationTemplateResolver(webApplication);
+		JakartaServletWebApplication webApplication = JakartaServletWebApplication.buildApplication(servletContext);     
+		WebApplicationTemplateResolver templateResolver = new WebApplicationTemplateResolver(webApplication);
 		templateResolver.setTemplateMode(TemplateMode.HTML);
 		this.templateEngine = new TemplateEngine();
 		this.templateEngine.setTemplateResolver(templateResolver);
@@ -119,6 +123,7 @@ public class GoToPlaylistPage extends HttpServlet {
             JakartaServletWebApplication webApplication = JakartaServletWebApplication.buildApplication(getServletContext());
             WebContext ctx = new WebContext(webApplication.buildExchange(request, response), request.getLocale());
             
+            // Imposta sempre i dati principali
             ctx.setVariable("playlist", playlist);
             ctx.setVariable("currentPageSongs", currentPageSongs);
             ctx.setVariable("availableSongs", availableSongs);
@@ -126,11 +131,41 @@ public class GoToPlaylistPage extends HttpServlet {
             ctx.setVariable("totalPages", totalPages);
             ctx.setVariable("hasPrevious", hasPrevious);
             ctx.setVariable("hasNext", hasNext);
-            //ctx.setVariable("isFirstPage", currentPage == 0);
-            //ctx.setVariable("isLastPage", currentPage == totalPages - 1);
+            
+            // PATTERN POST-REDIRECT-GET: Leggi i flash messages dalla sessione
+            
+            // === MESSAGGI DI SUCCESSO ===
+            List<String> successMessages = FlashMessagesManager.getAndClearSuccessMessages(request);
+            if (!successMessages.isEmpty()) {
+                // Per compatibilità con template esistente, usa il primo messaggio
+                ctx.setVariable("successMessage", successMessages.get(0));
+            }
+            
+            // === FLASH MESSAGES PER ERRORI ===
+            // Recupera e rimuove gli errori strutturati per campo
+            Map<String, String> allFieldErrors = FlashMessagesManager.getAndClearFieldErrors(request);
+            
+            // Filtra errori addSongs (con prefisso "addSongs_") E errori generali
+            Map<String, String> displayErrors = new HashMap<>();
+            for (Map.Entry<String, String> entry : allFieldErrors.entrySet()) {
+                if (entry.getKey().startsWith("addSongs_")) {
+                    // Rimuovi prefisso "addSongs_" per compatibilità template
+                    String cleanKey = entry.getKey().substring(9); // rimuove "addSongs_"
+                    displayErrors.put(cleanKey, entry.getValue());
+                } else if (entry.getKey().equals("generalError")) {
+                    // Errori generali (da altre servlet come GoToPlayerPage)
+                    displayErrors.put("generalError", entry.getValue());
+                }
+            }
+            
+            // Imposta variabili per template
+            if (!displayErrors.isEmpty()) {
+                ctx.setVariable("errorMessages", displayErrors);
+            }
             
             templateEngine.process(path, ctx, response.getWriter());
-        }catch (SQLException e) {
+            
+        } catch (SQLException e) {
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error retrieving playlist data");
             e.printStackTrace();
         }
@@ -148,5 +183,4 @@ public class GoToPlaylistPage extends HttpServlet {
             e.printStackTrace();
         }
     }
-
 }

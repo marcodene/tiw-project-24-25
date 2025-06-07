@@ -10,10 +10,14 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
+import it.polimi.tiw.projects.beans.Song;
 import it.polimi.tiw.projects.beans.User;
 import it.polimi.tiw.projects.dao.SongDAO;
 import it.polimi.tiw.projects.utils.ConnectionHandler;
+import it.polimi.tiw.projects.utils.FlashMessagesManager;
 
 @WebServlet("/DeleteSong")
 public class DeleteSong extends HttpServlet {
@@ -39,52 +43,82 @@ public class DeleteSong extends HttpServlet {
         
         User user = (User) session.getAttribute("user");
         
+        // Mappa per messaggi di errore strutturati (pattern PRG standard)
+        Map<String, String> errorMessages = new HashMap<>();
+        boolean hasErrors = false;
+        String successMessage = null;
+        
         // Get song ID and optional playlist ID from request
         String songIDStr = request.getParameter("songID");
-        String playlistIdStr = request.getParameter("playlistId");
+        String playlistIdStr = request.getParameter("playlistId"); // Per il redirect intelligente
         
         if (songIDStr == null || songIDStr.isEmpty()) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Song ID is required");
-            return;
+            errorMessages.put("generalError", "Song ID is required");
+            hasErrors = true;
         }
         
-        int songID;
-        try {
-            songID = Integer.parseInt(songIDStr);
-        } catch (NumberFormatException e) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid song ID format");
-            return;
+        int songID = -1;
+        if (!hasErrors) {
+            try {
+                songID = Integer.parseInt(songIDStr);
+            } catch (NumberFormatException e) {
+                errorMessages.put("generalError", "Invalid song ID format");
+                hasErrors = true;
+            }
         }
         
-        // Delete the song
-        SongDAO songDAO = new SongDAO(connection);
-        try {
-            // Verify song belongs to the user before deletion
-            if (songDAO.getSongByIDAndUser(songID, user.getId()) == null) {
-                response.sendError(HttpServletResponse.SC_FORBIDDEN, "You don't have permission to delete this song");
-                return;
+        // Se non ci sono errori di validazione, procedi con la cancellazione
+        if (!hasErrors) {
+            SongDAO songDAO = new SongDAO(connection);
+            try {
+                // Verify song belongs to the user and get song name for success message
+                Song song = songDAO.getSongByIDAndUser(songID, user.getId());
+                if (song == null) {
+                    errorMessages.put("generalError", "Song not found or you don't have permission to delete it");
+                    hasErrors = true;
+                } else {
+                    // Delete the song
+                    boolean success = songDAO.deleteSong(songID, user.getId());
+                    
+                    if (!success) {
+                        errorMessages.put("generalError", "Failed to delete the song. Please try again.");
+                        hasErrors = true;
+                    } else {
+                        successMessage = "Song '" + song.getName() + "' by " + song.getArtistName() + " deleted successfully!";
+                    }
+                }
+                
+            } catch (SQLException e) {
+                errorMessages.put("generalError", "Database error during song deletion: " + e.getMessage());
+                hasErrors = true;
+                e.printStackTrace();
             }
-            
-            boolean success = songDAO.deleteSong(songID, user.getId());
-            
-            if (!success) {
-                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Failed to delete the song");
-                return;
-            }
-            
-            // Redirect to appropriate page
-            if (playlistIdStr != null && !playlistIdStr.isEmpty()) {
-                // If we came from a playlist, go back to that playlist
-                response.sendRedirect(getServletContext().getContextPath() + "/GoToPlaylistPage?playlistId=" + playlistIdStr);
-            } else {
-                // Otherwise, go to home page
-                response.sendRedirect(getServletContext().getContextPath() + "/Home");
-            }
-            
-        } catch (SQLException e) {
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database error during song deletion");
-            e.printStackTrace();
         }
+        
+        // PATTERN POST-REDIRECT-GET: Gestione flash messages
+        
+        // Aggiungi messaggio di successo
+        if (successMessage != null) {
+            FlashMessagesManager.addSuccessMessage(request, successMessage);
+        }
+        
+        // Aggiungi errori strutturati
+        if (!errorMessages.isEmpty()) {
+            FlashMessagesManager.addFieldErrors(request, errorMessages);
+        }
+        
+        // REDIRECT INTELLIGENTE basato su dove è stata chiamata la cancellazione
+        String redirectPath;
+        if (playlistIdStr != null && !playlistIdStr.isEmpty()) {
+            // Se proveniamo da una playlist, torniamo a quella playlist
+            redirectPath = getServletContext().getContextPath() + "/GoToPlaylistPage?playlistId=" + playlistIdStr;
+        } else {
+            // Altrimenti, torniamo alla home page
+            redirectPath = getServletContext().getContextPath() + "/Home";
+        }
+        
+        // SEMPRE redirect (pattern PRG)
+        response.sendRedirect(redirectPath);
     }
     
     public void destroy() {
