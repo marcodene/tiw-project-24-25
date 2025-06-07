@@ -69,7 +69,7 @@ const ReorderComponent = (() => {
 	    currentPlaylistForReorder = playlist;
 	    document.getElementById('reorderModalTitle').textContent = `Reorder: ${playlist.name}`;
 	    
-	    // Mostra messaggio di caricamento
+	    // Show loading message
 	    const messageArea = document.getElementById('reorderMessageArea');
 	    messageArea.textContent = 'Loading playlist details...';
 	    messageArea.className = 'message-area';
@@ -81,13 +81,13 @@ const ReorderComponent = (() => {
 	                try {
 	                    const response = JSON.parse(req.responseText);
 	                    if (response.status === 'success') {
-	                        // Aggiorna currentPlaylistForReorder con i dati completi incluse le canzoni
+							// Update currentPlaylistForReorder with complete data including songs
 	                        currentPlaylistForReorder = response.data;
 	                        
-	                        // Renderizza la lista delle canzoni ora che abbiamo i dati completi
+							// Render songs list with complete data
 	                        renderSongListForReorder([...response.data.songs]);
 	                        
-	                        // Pulisce il messaggio di caricamento
+	                        // Clean loading message
 	                        messageArea.textContent = '';
 	                        messageArea.className = 'message-area';
 	                    } else {
@@ -105,7 +105,7 @@ const ReorderComponent = (() => {
 	        }
 	    });
 
-	    // Mostra il modal immediatamente (con il messaggio di caricamento)
+		// Show immediately the modal (with loading message)
 	    modalElement.style.display = 'block';
 	};
 	
