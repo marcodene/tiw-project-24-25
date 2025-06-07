@@ -699,6 +699,7 @@ audio::-webkit-media-controls-timeline {
     color: white !important;
     transform: rotate(2deg);
     box-shadow: 0 4px 15px rgba(255, 91, 76, 0.3);
+    cursor: grabbing !important;
 }
 
 /* Pulsanti del modal */
