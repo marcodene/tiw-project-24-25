@@ -1,6 +1,8 @@
 package it.polimi.tiw.projects.dao;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -178,51 +180,160 @@ public class SongDAO {
 	
 	private void deletePhysicalFiles(Song song) {
 	    String baseStoragePath = null;
+	    Path basePath = null;
 	    
 	    try {
 	        baseStoragePath = FileStorageManager.getBaseStoragePath();
 	        
-	        // Verifica che il FileStorageManager sia stato inizializzato correttamente
 	        if (baseStoragePath == null || baseStoragePath.trim().isEmpty()) {
 	            throw new IllegalStateException("FileStorageManager not properly initialized - base storage path is null or empty");
 	        }
 	        
+	        // Convert to Path for safe handling and normalize
+	        basePath = Paths.get(baseStoragePath).toAbsolutePath().normalize();
+	        
 	    } catch (Exception e) {
 	        System.err.println("Error: Could not get base storage path for deleting files. " + e.getMessage());
 	        System.err.println("File deletion aborted to prevent incorrect path operations.");
-	        return; // Interrompe l'operazione invece di continuare con percorsi potenzialmente sbagliati
+	        return;
 	    }
 
-	    // Elimina il file di copertina se esiste
+	    // Securely delete cover file with path validation
 	    if (song.getAlbumCoverPath() != null && !song.getAlbumCoverPath().isEmpty()) {
-	        String coverFilePath = baseStoragePath + song.getAlbumCoverPath();
-	        File coverFile = new File(coverFilePath);
-	        
-	        if (coverFile.exists()) {
-	            if (coverFile.delete()) {
-	                System.out.println("Successfully deleted cover file: " + coverFilePath);
-	            } else {
-	                System.err.println("Failed to delete cover file: " + coverFilePath);
+	        try {
+	            if (!deleteFileSecurely(basePath, song.getAlbumCoverPath(), "covers", "cover")) {
+	                System.err.println("Failed to securely delete cover file: " + song.getAlbumCoverPath());
 	            }
-	        } else {
-	            System.out.println("Cover file not found (may have been already deleted): " + coverFilePath);
+	        } catch (Exception e) {
+	            System.err.println("Error deleting cover file: " + e.getMessage());
 	        }
 	    }
 	    
-	    // Elimina il file audio se esiste
+	    // Securely delete audio file with path validation
 	    if (song.getAudioFilePath() != null && !song.getAudioFilePath().isEmpty()) {
-	        String audioFilePath = baseStoragePath + song.getAudioFilePath();
-	        File audioFile = new File(audioFilePath);
-	        
-	        if (audioFile.exists()) {
-	            if (audioFile.delete()) {
-	                System.out.println("Successfully deleted audio file: " + audioFilePath);
-	            } else {
-	                System.err.println("Failed to delete audio file: " + audioFilePath);
+	        try {
+	            if (!deleteFileSecurely(basePath, song.getAudioFilePath(), "songs", "audio")) {
+	                System.err.println("Failed to securely delete audio file: " + song.getAudioFilePath());
 	            }
-	        } else {
-	            System.out.println("Audio file not found (may have been already deleted): " + audioFilePath);
+	        } catch (Exception e) {
+	            System.err.println("Error deleting audio file: " + e.getMessage());
 	        }
+	    }
+	}
+	
+	/**
+	 * Securely deletes a file with path validation to prevent path traversal attacks.
+	 * This method ensures that files can only be deleted from the expected directories
+	 * and prevents malicious paths from escaping the base storage directory.
+	 * 
+	 * @param basePath The base storage path as a normalized Path object (e.g., /var/webapp/storage)
+	 * @param relativePath The relative file path from database (e.g., "/covers/filename.jpg")
+	 * @param expectedDir The expected directory name ("covers" or "songs")
+	 * @param fileType Description for logging ("cover" or "audio")
+	 * @return true if file was successfully deleted or didn't exist, false on failure
+	 */
+	private boolean deleteFileSecurely(Path basePath, String relativePath, String expectedDir, String fileType) {
+	    try {
+	        // Clean the path by removing leading slash if present
+	        // This converts "/covers/file.jpg" to "covers/file.jpg" for consistent processing
+	        String cleanPath = relativePath.startsWith("/") ? relativePath.substring(1) : relativePath;
+	        
+	        // Perform comprehensive security validation
+	        // This checks for dangerous characters and ensures proper path structure
+	        if (!isPathSafe(cleanPath, expectedDir)) {
+	            System.err.println("Security: Unsafe " + fileType + " path rejected: " + relativePath);
+	            return false;
+	        }
+	        
+	        // Build the target path safely using Java NIO Path API
+	        // The resolve() method safely combines paths, and normalize() removes any ".." or "." components
+	        // Example: basePath="/var/storage" + cleanPath="covers/file.jpg" → "/var/storage/covers/file.jpg"
+	        Path targetPath = basePath.resolve(cleanPath).normalize();
+	        
+	        // This ensures the final path is still within our base directory
+	        // Even if an attacker somehow bypassed previous checks, this prevents directory escape
+	        // Example: if targetPath="/etc/passwd", it won't start with basePath="/var/storage"
+	        if (!targetPath.startsWith(basePath)) {
+	            System.err.println("Security: Path traversal blocked for " + fileType + ": " + relativePath);
+	            return false;
+	        }
+	        
+	        // Step 5: Perform the actual file deletion with proper validation
+	        return performFileDeletion(targetPath, fileType);
+	        
+	    } catch (Exception e) {
+	        System.err.println("Error during " + fileType + " file deletion: " + e.getMessage());
+	        return false;
+	    }
+	}
+
+	/**
+	 * Validates if a path is safe for file operations by checking for common attack patterns.
+	 * This method implements multiple layers of validation to prevent path traversal attacks.
+	 * 
+	 * @param cleanPath The cleaned path without leading slash (e.g., "covers/file.jpg")
+	 * @param expectedDir The directory that should contain the file ("covers" or "songs")
+	 * @return true if the path is safe to use, false if it contains dangerous patterns
+	 */
+	private boolean isPathSafe(String cleanPath, String expectedDir) {
+	    // Block dangerous characters that could be used for path traversal
+	    // ".." moves up one directory level, "\" is Windows path separator that could bypass checks
+	    if (cleanPath.contains("..") || cleanPath.contains("\\") || cleanPath.isEmpty()) {
+	        return false;
+	    }
+	    
+	    // Enforce strict path structure - must be exactly "directory/filename"
+	    // This prevents paths like "covers/subfolder/file.jpg" or just "file.jpg"
+	    // Split by "/" and ensure we get exactly 2 parts: [directory, filename]
+	    String[] parts = cleanPath.split("/");
+	    if (parts.length != 2 || !expectedDir.equals(parts[0])) {
+	        return false;
+	    }
+	    
+	    // Validate the filename itself
+	    // Block empty names, current directory ".", parent directory "..", and hidden files starting with "."
+	    // This prevents attacks using special directory references
+	    String filename = parts[1];
+	    return !filename.isEmpty() && 
+	           !filename.equals(".") && 
+	           !filename.equals("..") && 
+	           !filename.startsWith(".");
+	}
+
+	/**
+	 * Performs the actual file deletion with proper validation and error handling.
+	 * This method handles the final steps of file deletion after all security checks have passed.
+	 * 
+	 * @param targetPath The fully validated and safe path to the file to delete
+	 * @param fileType Description for logging purposes ("cover" or "audio")
+	 * @return true if deletion succeeded or file didn't exist, false on failure
+	 */
+	private boolean performFileDeletion(Path targetPath, String fileType) {
+	    // Convert Path to File object for deletion operation
+	    File targetFile = targetPath.toFile();
+	    
+	    // File doesn't exist - this is actually OK
+	    // The file might have been deleted already, or never existed due to upload failure
+	    if (!targetFile.exists()) {
+	        System.out.println(fileType + " file not found (already deleted or never existed): " + targetPath);
+	        return true; // Consider this a success since the end goal (file not existing) is achieved
+	    }
+	    
+	    // Target exists but is not a regular file (could be a directory or special file)
+	    // This is a security concern - we should never try to delete directories or special files
+	    if (!targetFile.isFile()) {
+	        System.err.println("Security: Target is not a regular file, deletion blocked: " + targetPath);
+	        return false;
+	    }
+	    
+	    // File exists and is a regular file - attempt deletion
+	    if (targetFile.delete()) {
+	        System.out.println("Successfully deleted " + fileType + " file: " + targetPath);
+	        return true;
+	    } else {
+	        // Deletion failed - could be due to file permissions, file being in use, or filesystem issues
+	        System.err.println("Failed to delete " + fileType + " file (filesystem error): " + targetPath);
+	        return false;
 	    }
 	}
 	
