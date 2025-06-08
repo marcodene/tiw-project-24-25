@@ -23,7 +23,7 @@ const ReorderComponent = (() => {
         const closeButton = document.createElement('span');
         closeButton.className = 'close-button';
         closeButton.innerHTML = '&times;';
-        closeButton.onclick = closeModal;
+        closeButton.addEventListener('click', closeModal);
 
         const title = document.createElement('h3');
         title.id = 'reorderModalTitle';
@@ -34,11 +34,11 @@ const ReorderComponent = (() => {
 
         const saveButton = document.createElement('button');
         saveButton.textContent = 'Save Order';
-        saveButton.onclick = handleSaveOrder;
+        saveButton.addEventListener('click', handleSaveOrder);
 
         const cancelButton = document.createElement('button');
         cancelButton.textContent = 'Cancel';
-        cancelButton.onclick = closeModal;
+        cancelButton.addEventListener('click', closeModal);
         
         const messageArea = document.createElement('div');
         messageArea.id = 'reorderMessageArea';
@@ -127,9 +127,9 @@ const ReorderComponent = (() => {
         playlistToListElement.innerHTML = ''; // Clear previous items
         
         // Set up container-level event listeners (only once, here)
-        playlistToListElement.ondragover = handleDragOver;
-        playlistToListElement.ondrop = handleDrop;
-        playlistToListElement.ondragenter = handleDragEnter;
+        playlistToListElement.addEventListener('dragover', handleDragOver);
+        playlistToListElement.addEventListener('drop', handleDrop);
+        playlistToListElement.addEventListener('dragenter', handleDragEnter);
         
         songs.forEach((song, index) => {
             const li = document.createElement('li');
@@ -137,11 +137,10 @@ const ReorderComponent = (() => {
             li.setAttribute('data-song-id', song.ID);
             li.setAttribute('draggable', true);
 
-            // Use direct event handlers instead of addEventListener for better cross-browser support
-            li.ondragstart = handleDragStart;
-            li.ondragend = handleDragEnd;
-            li.ondragover = handleDragOver;
-            li.ondragenter = handleDragEnter;
+            // Add drag and drop event listeners
+            li.addEventListener('dragstart', handleDragStart);
+            li.addEventListener('dragover', handleDragOver);
+            li.addEventListener('dragenter', handleDragEnter);
             
             playlistToListElement.appendChild(li);
         });
@@ -161,7 +160,7 @@ const ReorderComponent = (() => {
         e.dataTransfer.setData('text/html', e.target.innerHTML);
         e.dataTransfer.setData('text/plain', e.target.getAttribute('data-song-id'));
         
-        // Add visual feedback
+        // Add visual feedback after dragstart completes to avoid rendering conflicts
         setTimeout(() => {
             if (draggedItem) {
                 draggedItem.classList.add('dragging');
@@ -171,7 +170,8 @@ const ReorderComponent = (() => {
 
     /**
      * Handles drag enter events
-     * Required for Firefox compatibility
+     * REQUIRED for Firefox compatibility - Firefox needs preventDefault() 
+     * on both dragenter and dragover events for drops to work
      */
     const handleDragEnter = (e) => {
         e.preventDefault();
@@ -187,11 +187,11 @@ const ReorderComponent = (() => {
         if (e.preventDefault) {
             e.preventDefault(); // Allows us to drop
         }
-        
+      
         e.dataTransfer.dropEffect = 'move';
         
         if (!draggedItem) return false;
-        
+
         // Find the closest li element (handles both li and its children)
         let target = e.target;
         while (target && target.tagName !== 'LI' && target !== playlistToListElement) {
@@ -199,11 +199,6 @@ const ReorderComponent = (() => {
         }
         
         if (target && target.tagName === 'LI' && target !== draggedItem && target.parentNode === playlistToListElement) {
-            // Get all list items to determine position
-            const allItems = [...playlistToListElement.children];
-            const draggedIndex = allItems.indexOf(draggedItem);
-            const targetIndex = allItems.indexOf(target);
-            
             // Determine if dragging above or below the target item
             const rect = target.getBoundingClientRect();
             const offsetY = e.clientY - rect.top;
@@ -243,16 +238,6 @@ const ReorderComponent = (() => {
         return false;
     };
     
-    /**
-     * Handles end of drag operation
-     * Cleanup function for drag state
-     */
-    const handleDragEnd = (e) => {
-        if (e.target) {
-            e.target.classList.remove('dragging');
-        }
-        draggedItem = null;
-    };
 
     /**
      * Handles saving the new song order to the server

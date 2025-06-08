@@ -259,13 +259,13 @@ public class SongServletRIA extends HttpServlet {
             errors.put("audioFile", "Invalid audio file format. Only MP3, WAV, OGG, and M4A files are allowed.");
         }
 
-        // Validate image file (optional)
-        if (imageFilePart != null && imageFilePart.getSize() > 0) {
-            if (imageFilePart.getSize() > 5 * 1024 * 1024) { // 5MB limit
-                errors.put("imageFile", "Image file must be smaller than 5MB.");
-            } else if (!isValidImageFile(imageFilePart)) {
-                errors.put("imageFile", "Invalid image file format. Only JPG, PNG, and GIF files are allowed.");
-            }
+        // Validate image file
+        if (imageFilePart == null || imageFilePart.getSize() == 0) {
+            errors.put("imageFile", "Image file is required.");
+        } else if (imageFilePart.getSize() > 10 * 1024 * 1024) { // 10MB limit
+            errors.put("imageFile", "Image file must be smaller than 10MB.");
+        } else if (!isValidImageFile(imageFilePart)) {
+            errors.put("imageFile", "Invalid image file format. Only JPG, PNG, and GIF files are allowed.");
         }
     }
 
@@ -417,6 +417,9 @@ public class SongServletRIA extends HttpServlet {
     private boolean isValidImageFile(Part filePart) {
         String fileName = filePart.getSubmittedFileName().toLowerCase();
         String contentType = filePart.getContentType();
+        
+        System.out.println(fileName);
+        System.out.println(contentType);
         
         // Check file extension
         boolean validExtension = fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") || 

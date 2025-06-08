@@ -1,6 +1,6 @@
 const Home = (() => {
     let container; // To store the main container element for the home view
-
+	
     /**
      * Renders the main home page interface
      * Called by Router when navigating to 'home' route
@@ -66,7 +66,7 @@ const Home = (() => {
             
             card.innerHTML = `
                 <h4>${playlist.name}</h4>
-                <p>${playlist.songs ? playlist.songs.length : 0} songs</p>
+                <p>${playlist.creationDate ? playlist.creationDate : ""}</p>
                 <div class="playlist-actions">
                     <button class="view-btn">View</button>
                     <button class="delete-btn">Delete</button>
@@ -116,7 +116,7 @@ const Home = (() => {
                 </select>
             </div>
             <div><label for="songAudioFile">Audio File (MP3, WAV):</label><input type="file" id="songAudioFile" name="audioFile" accept=".mp3,.wav" required></div>
-            <div><label for="songImageFile">Cover Image (JPG, PNG):</label><input type="file" id="songImageFile" name="imageFile" accept=".jpg,.jpeg,.png"></div>
+            <div><label for="songImageFile">Cover Image (JPG, PNG):</label><input type="file" id="songImageFile" name="imageFile" accept=".jpg,.jpeg,.png" required></div>
             <button type="submit">Upload Song</button>
             <div id="uploadSongMessage" class="message-area"></div>
         `;

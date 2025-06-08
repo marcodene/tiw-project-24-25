@@ -243,35 +243,30 @@ const Auth = (() => {
 	 */
 	const syncSessionWithServer = () => {
 		return new Promise((resolve) => {
-			const localUser = SessionManager.getUser();
-			
 			makeCall('GET', '/api/checkAuth', null, (req) => {
 				if (req.readyState === XMLHttpRequest.DONE) {
-					try {
-						const response = JSON.parse(req.responseText);
-						
-						if (req.status === 200 && response.status === 'success') {
-							// Server ha sessione valida
-							if (!localUser || localUser.id !== response.data.id) {
-								// Aggiorna sessionStorage con dati server
-								SessionManager.setUser(response.data);
-							}
-							resolve(response.data);
-						} else {
-							// Server non ha sessione valida
-							if (localUser) {
-								SessionManager.clearUser(); // Pulisci dati locali stantii
-							}
-							resolve(null);
-						}
-					} catch (error) {
-						console.error('❌ Session validation failed:', error);
-						//TODO probabilmente meglio sostituire con resolve(null) perchè in caso di problemi faccio rifare il login
-						resolve(localUser); // Use local data as fallback
+					const serverUser = parseServerResponse(req);
+					
+					if (serverUser) {
+						SessionManager.setUser(serverUser);
+						resolve(serverUser);
+					} else {
+						SessionManager.clearUser();
+						resolve(null);
 					}
 				}
 			});
 		});
+	};
+
+	const parseServerResponse = (req) => {
+		try {
+			const response = JSON.parse(req.responseText);
+			return (req.status === 200 && response.status === 'success') ? response.data : null;
+		} catch (error) {
+			console.error('❌ Session validation failed:', error);
+			return null;
+		}
 	};
 
 	/**

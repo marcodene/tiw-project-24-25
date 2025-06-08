@@ -31,13 +31,6 @@ public class AuthFilter implements Filter {
         String requestURI = httpRequest.getRequestURI();
         String contextPath = httpRequest.getContextPath();
         
-        //TODO da togliere probabilmente
-        // Skip for OPTIONS requests (preflight)
-        if ("OPTIONS".equalsIgnoreCase(httpRequest.getMethod())) {
-            chain.doFilter(request, response);
-            return;
-        }
-        
         // Allow access to login page and related resources
         if (requestURI.endsWith("/login.html") || 
             requestURI.endsWith("/index.html") ||

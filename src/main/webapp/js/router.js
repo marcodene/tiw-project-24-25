@@ -36,9 +36,7 @@ const Router = (() => {
             } else {
                 appContentContainer.innerHTML = '<h2>Account Management View (Component not fully loaded)</h2>';
             }
-        },
-        // Add more routes as needed, e.g., 'uploadSongForm', 'createPlaylistForm'
-        // These might be part of 'home' or separate components.
+        }
     };
 
     /**
@@ -52,13 +50,6 @@ const Router = (() => {
             console.error('Router: App content container not found:', appContentContainerId);
             return;
         }
-        // Listen to view changes from State to potentially trigger rendering
-        State.subscribe('viewChanged', (newView) => {
-            // This is one way to link state change to route action.
-            // navigateTo might be called directly too.
-            // If navigateTo itself sets the state, this could be redundant or circular.
-            // For now, assume navigateTo is the primary way to change views.
-        });
     };
 
     /**
@@ -77,7 +68,6 @@ const Router = (() => {
                      return;
                 }
             }
-            
             routes[viewName](data); // Execute the route function to render the view
         } else {
             console.error(`Router: Route "${viewName}" not found.`);

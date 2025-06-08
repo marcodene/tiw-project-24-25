@@ -254,9 +254,7 @@ public class PlaylistServletRIA extends HttpServlet {
                 sendError(response, HttpServletResponse.SC_NOT_FOUND, "Playlist not found or access denied.");
                 return;
             }
-            // TODO: Validate that all songIdsInOrder actually belong to the playlist and user.
-            // The DAO's saveCustomSongOrder might not check this deeply.
-
+            // Validation is handled in the DAO's saveCustomSongOrder method
             playlistDAO.saveCustomSongOrder(playlistId, songIdsInOrder, user.getId());
             Playlist updatedPlaylist = playlistDAO.getPlaylistByIdAndUser(playlistId, user.getId(), true); // Fetch updated
             sendSuccess(response, updatedPlaylist.toJSON(), HttpServletResponse.SC_OK);
@@ -301,7 +299,6 @@ public class PlaylistServletRIA extends HttpServlet {
                 boolean success = playlistDAO.deletePlaylist(playlistId, user.getId());
                 if (success) {
                     // Standard practice for DELETE is to return 204 No Content on success
-                    // or 200 OK with a confirmation message.
                     response.setStatus(HttpServletResponse.SC_NO_CONTENT); 
                 } else {
                     // This might happen if the playlist was deleted between check and actual delete, or another issue.

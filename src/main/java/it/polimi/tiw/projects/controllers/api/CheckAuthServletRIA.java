@@ -35,9 +35,6 @@ public class CheckAuthServletRIA extends HttpServlet {
         } else {
             responseMap.put("status", "error");
             responseMap.put("message", "No active session found.");
-            // It's common to return 200 OK with a specific payload for "not authenticated" 
-            // for checkAuth, rather than a 401, to simplify client logic.
-            // Alternatively, could return SC_UNAUTHORIZED (401).
             response.setStatus(HttpServletResponse.SC_OK); 
         }
         response.getWriter().write(gson.toJson(responseMap));

@@ -44,50 +44,41 @@ public class SongDAO {
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 		int generatedSongId = -1;
 		
-		// Ensure GenreDAO is used correctly
+		// Validate genre is provided and exists
+		if (song.getGenre() == null || song.getGenre().trim().isEmpty()) {
+		    throw new SQLException("Genre is mandatory and cannot be empty.");
+		}
+		
 		GenreDAO genreDAO = new GenreDAO(connection);
-		int genreId;
+		Integer genreIdInteger;
 		try {
-			genreId = genreDAO.getGenreIdByName(song.getGenre());
-			if (genreId == -1 && song.getGenre() != null && !song.getGenre().trim().isEmpty())  // Genre name provided but not found
-			    // Option 1: Throw an exception if genre must exist
-			    // throw new SQLException("Genre '" + song.getGenre() + "' not found.");
-			    // Option 2: Allow creating song with NULL genreId if genre is optional and not found
-			    // For now, let's assume genre must be valid if provided, or handled by caller.
-			    // If getGenreIdByName returns -1 for a valid case (e.g. "Unknown"), that's fine.
-			    // If it means error, it should throw SQLException itself or servlet should pre-validate.
-			    // The original code had a TODO about this. For RIA, client should send genreId or valid name.
-                // We'll assume the servlet ensures genreId is valid before populating the bean or uses an ID.
-                // For this DAO method, we'll trust the genreId if it's directly set in the song bean,
-                // otherwise, resolve from song.getGenre().
-                // The servlet should ideally pass genreId directly.
-                // For now, sticking to resolving name if only name is in bean.
-                 if (genreId == -1) throw new SQLException("Genre name '" + song.getGenre() + "' could not be resolved to an ID.");
-
+			genreIdInteger = genreDAO.getGenreIdByName(song.getGenre().trim());
+			if (genreIdInteger == null) {
+			    throw new SQLException("Genre '" + song.getGenre() + "' not found. Please select a valid genre.");
+			}
 		} catch (SQLException e) {
 		    // If GenreDAO throws an error finding the genre, propagate it
-		    throw new SQLException("Error resolving genre: " + song.getGenre(), e);
+		    throw new SQLException("Error validating genre: " + song.getGenre(), e);
 		}
+		
+		int genreId = genreIdInteger; // Safe conversion since we checked for null
 
 		try (PreparedStatement pstatement = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
 			pstatement.setInt(1, song.getUserID());
 			pstatement.setString(2, song.getName());
 			pstatement.setInt(3, genreId); // Use resolved genreId
 	        
-            // Audio file path is mandatory for RIA as per general understanding of music apps
-	        if (song.getAudioFilePath() != null && !song.getAudioFilePath().isEmpty()) {
-	            pstatement.setString(4, song.getAudioFilePath());
-	        } else {
-	            // throw new SQLException("Audio file path is mandatory."); // Or handle as bad request in servlet
-                 pstatement.setNull(4, java.sql.Types.VARCHAR); // Fallback if allowed, but ideally throw
-	        }
+            // Audio file path is mandatory for RIA
+        if (song.getAudioFilePath() == null || song.getAudioFilePath().trim().isEmpty()) {
+            throw new SQLException("Audio file is mandatory and cannot be empty.");
+        }
+        pstatement.setString(4, song.getAudioFilePath());
 	        
-            // Album cover can be optional
-	        if (song.getAlbumCoverPath() != null && !song.getAlbumCoverPath().isEmpty()) {
-	            pstatement.setString(5, song.getAlbumCoverPath());
-	        } else {
-	            pstatement.setNull(5, java.sql.Types.VARCHAR);
-	        }
+            // Album cover is now mandatory
+        if (song.getAlbumCoverPath() == null || song.getAlbumCoverPath().trim().isEmpty()) {
+            throw new SQLException("Album cover is mandatory and cannot be empty.");
+        }
+        pstatement.setString(5, song.getAlbumCoverPath());
 	        pstatement.setString(6, song.getAlbumName());
 	        pstatement.setString(7, song.getArtistName());
 	        pstatement.setInt(8, song.getAlbumReleaseYear());
@@ -239,6 +230,4 @@ public class SongDAO {
         return song;
     }
 
-    // Removed unused methods: existsSongByNameAndUser, existAllSongsByNamesAndUser, getSongIDByNameAndUser, getSongByNameAndUser
-    // These were marked with TODOs in the original file or are redundant with ID-based methods.
 }

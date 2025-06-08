@@ -397,14 +397,38 @@ public class PlaylistDAO {
         if (getPlaylistByIdAndUser(playlistId, userId) == null) {
             throw new SQLException("Playlist not found or user mismatch.");
         }
+        
+        // Validate that all songIdsInOrder actually belong to this playlist
+        String validateQuery = "SELECT COUNT(*) FROM PlaylistSong WHERE playlistID = ? AND songID = ?";
+        try (PreparedStatement validateStatement = connection.prepareStatement(validateQuery)) {
+            for (Integer songId : songIdsInOrder) {
+                validateStatement.setInt(1, playlistId);
+                validateStatement.setInt(2, songId);
+                try (ResultSet rs = validateStatement.executeQuery()) {
+                    if (rs.next() && rs.getInt(1) == 0) {
+                        throw new SQLException("Song ID " + songId + " does not belong to playlist " + playlistId);
+                    }
+                }
+            }
+        }
 
         boolean originalAutoCommit = connection.getAutoCommit();
         try {
             connection.setAutoCommit(false);
 
-            // Update customOrder for each song in the playlist
-            // This assumes all songs in songIdsInOrder are already in the playlist.
-            //TODO A more robust version might clear existing order or handle songs not in list.
+            // Get all songs currently in the playlist
+            List<Integer> allSongsInPlaylist = new ArrayList<>();
+            String getAllSongsQuery = "SELECT songID FROM PlaylistSong WHERE playlistID = ?";
+            try (PreparedStatement getAllStatement = connection.prepareStatement(getAllSongsQuery)) {
+                getAllStatement.setInt(1, playlistId);
+                try (ResultSet rs = getAllStatement.executeQuery()) {
+                    while (rs.next()) {
+                        allSongsInPlaylist.add(rs.getInt("songID"));
+                    }
+                }
+            }
+            
+            // Update customOrder for songs in the new order (1-based)
             String updateQuery = "UPDATE PlaylistSong SET customOrder = ? WHERE playlistID = ? AND songID = ?";
             try (PreparedStatement pstatement = connection.prepareStatement(updateQuery)) {
                 for (int i = 0; i < songIdsInOrder.size(); i++) {
@@ -416,9 +440,18 @@ public class PlaylistDAO {
                 pstatement.executeBatch();
             }
             
-            //TODO da aggiustare
-            // Set customOrder to NULL for any songs in this playlist but NOT in the new order (optional, depends on desired behavior)
-            // For now, we only update the songs provided in the list.
+            // Assign order to songs not in the reorder list (they go after the ordered ones)
+            int nextOrder = songIdsInOrder.size() + 1;
+            for (Integer songId : allSongsInPlaylist) {
+                if (!songIdsInOrder.contains(songId)) {
+                    try (PreparedStatement pstatement = connection.prepareStatement(updateQuery)) {
+                        pstatement.setInt(1, nextOrder++);
+                        pstatement.setInt(2, playlistId);
+                        pstatement.setInt(3, songId);
+                        pstatement.executeUpdate();
+                    }
+                }
+            }
 
             connection.commit();
         } catch (SQLException e) {

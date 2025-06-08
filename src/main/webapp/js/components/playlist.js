@@ -3,15 +3,15 @@ const PlaylistComponent = (() => {
     let currentPlaylistObj; // Stores the playlist object passed by the router
     let currentPage = 1;
     const songsPerPage = 5;
-	
+
 	/**
 	 * Validates if a page number is within valid range
 	 * Called by pagination controls to ensure page navigation is valid
 	 * Returns true if page is integer between 1 and totalPages
 	 */
 	const validatePageNumber = (page, totalPages) => {
-	        return Number.isInteger(page) && page >= 1 && page <= Math.max(1, totalPages);
-	    };
+        return Number.isInteger(page) && page >= 1 && page <= Math.max(1, totalPages);
+    };
 
 	/**
 	 * Renders the complete playlist detail view with songs and forms
