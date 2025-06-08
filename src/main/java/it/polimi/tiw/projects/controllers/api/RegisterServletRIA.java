@@ -56,7 +56,6 @@ public class RegisterServletRIA extends HttpServlet {
         if (password == null || password.trim().isEmpty()) {
             errors.put("password", "Password is required.");
         }
-        // Add more validation as needed, e.g., password complexity, username format
 
         if (!errors.isEmpty()) {
             sendError(response, HttpServletResponse.SC_BAD_REQUEST, "Validation failed.", errors);

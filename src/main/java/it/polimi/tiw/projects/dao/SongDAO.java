@@ -177,30 +177,51 @@ public class SongDAO {
 	}
 	
 	private void deletePhysicalFiles(Song song) {
-	    // Assuming FileStorageManager.getBaseStoragePath() is correctly configured
-	    String baseStoragePath = ""; // Placeholder, should come from FileStorageManager or config
+	    String baseStoragePath = null;
+	    
 	    try {
-	        // This is a mock configuration path. In a real app, this comes from properties.
-	        // For the subtask, we can't access ServletContext to init FileStorageManager easily.
-	        // We'll assume paths in the song bean are relative to a known base.
-	        // If FileStorageManager needs ServletContext, this direct call won't work here.
-	        // For now, we proceed with the logic, acknowledging this limitation for subtask execution.
-	        // baseStoragePath = FileStorageManager.getBaseStoragePath(); // Ideal usage
+	        baseStoragePath = FileStorageManager.getBaseStoragePath();
+	        
+	        // Verifica che il FileStorageManager sia stato inizializzato correttamente
+	        if (baseStoragePath == null || baseStoragePath.trim().isEmpty()) {
+	            throw new IllegalStateException("FileStorageManager not properly initialized - base storage path is null or empty");
+	        }
+	        
 	    } catch (Exception e) {
-	        System.err.println("Warning: Could not get base storage path for deleting files. " + e.getMessage());
-	        // Proceeding with empty base path, meaning song paths must be absolute or resolvable.
+	        System.err.println("Error: Could not get base storage path for deleting files. " + e.getMessage());
+	        System.err.println("File deletion aborted to prevent incorrect path operations.");
+	        return; // Interrompe l'operazione invece di continuare con percorsi potenzialmente sbagliati
 	    }
 
+	    // Elimina il file di copertina se esiste
 	    if (song.getAlbumCoverPath() != null && !song.getAlbumCoverPath().isEmpty()) {
-	        File coverFile = new File(baseStoragePath + song.getAlbumCoverPath());
+	        String coverFilePath = baseStoragePath + song.getAlbumCoverPath();
+	        File coverFile = new File(coverFilePath);
+	        
 	        if (coverFile.exists()) {
-	            if(!coverFile.delete()) System.err.println("Failed to delete cover: " + coverFile.getAbsolutePath());
+	            if (coverFile.delete()) {
+	                System.out.println("Successfully deleted cover file: " + coverFilePath);
+	            } else {
+	                System.err.println("Failed to delete cover file: " + coverFilePath);
+	            }
+	        } else {
+	            System.out.println("Cover file not found (may have been already deleted): " + coverFilePath);
 	        }
 	    }
+	    
+	    // Elimina il file audio se esiste
 	    if (song.getAudioFilePath() != null && !song.getAudioFilePath().isEmpty()) {
-	        File audioFile = new File(baseStoragePath + song.getAudioFilePath());
+	        String audioFilePath = baseStoragePath + song.getAudioFilePath();
+	        File audioFile = new File(audioFilePath);
+	        
 	        if (audioFile.exists()) {
-	            if(!audioFile.delete()) System.err.println("Failed to delete audio: " + audioFile.getAbsolutePath());
+	            if (audioFile.delete()) {
+	                System.out.println("Successfully deleted audio file: " + audioFilePath);
+	            } else {
+	                System.err.println("Failed to delete audio file: " + audioFilePath);
+	            }
+	        } else {
+	            System.out.println("Audio file not found (may have been already deleted): " + audioFilePath);
 	        }
 	    }
 	}
@@ -224,7 +245,7 @@ public class SongDAO {
         song.setAlbumName(result.getString("albumName"));
         song.setArtistName(result.getString("albumArtist"));
         song.setAlbumReleaseYear(result.getInt("albumReleaseYear"));
-        song.setGenre(result.getString("genreName")); // Assumes genreName is joined from Genre table
+        song.setGenre(result.getString("genreName")); 
         song.setAlbumCoverPath(result.getString("albumCover"));
         song.setAudioFilePath(result.getString("file"));
         return song;

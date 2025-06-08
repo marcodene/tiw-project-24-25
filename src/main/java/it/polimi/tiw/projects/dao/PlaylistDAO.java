@@ -329,9 +329,6 @@ public class PlaylistDAO {
 	}
 	
 	public boolean deletePlaylist(int playlistId, int userId) throws SQLException {
-	    // ... (original deletePlaylist method, ensure it's robust)
-        // For brevity, assuming original method is mostly fine but ensure it handles custom order table if separate.
-        // PlaylistSong entries are deleted by playlistId, so custom order in that table is fine.
         boolean originalAutoCommit = connection.getAutoCommit();
 	    try {
 	        connection.setAutoCommit(false);
@@ -346,7 +343,7 @@ public class PlaylistDAO {
 	        String deletePlaylist = "DELETE FROM Playlist WHERE ID = ? AND userID = ?";
 	        try (PreparedStatement pstatement = connection.prepareStatement(deletePlaylist)) {
 	            pstatement.setInt(1, playlistId);
-	            pstatement.setInt(2, userId); // Ensure user owns it
+	            pstatement.setInt(2, userId); // Already ensured user owns it
 	            int affectedRows = pstatement.executeUpdate();
 	            if (affectedRows == 0) {
 	                connection.rollback(); return false;
@@ -370,7 +367,7 @@ public class PlaylistDAO {
         song.setAlbumName(result.getString("albumName"));
         song.setArtistName(result.getString("albumArtist"));
         song.setAlbumReleaseYear(result.getInt("albumReleaseYear"));
-        song.setGenre(result.getString("genreName")); // Assumes genreName is joined
+        song.setGenre(result.getString("genreName"));
         song.setAlbumCoverPath(result.getString("albumCover"));
         song.setAudioFilePath(result.getString("file"));
         return song;

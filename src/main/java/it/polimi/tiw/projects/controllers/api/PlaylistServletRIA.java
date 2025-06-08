@@ -63,9 +63,6 @@ public class PlaylistServletRIA extends HttpServlet {
                 List<Playlist> playlists = playlistDAO.getAllPlaylistsByUserId(user.getId());
                 List<Map<String, Object>> playlistsJson = new ArrayList<>();
                 for (Playlist p : playlists) {
-                    // Pass false to avoid fetching all songs for the list view (more efficient)
-                    // The Playlist.toJSON() itself doesn't fetch, it serializes what's in the bean.
-                    // getAllPlaylistsByUserId in DAO was already optimized not to fetch songs.
                     playlistsJson.add(p.toJSON()); 
                 }
                 sendSuccess(response, playlistsJson, HttpServletResponse.SC_OK);

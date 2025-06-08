@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS Song (
     name VARCHAR(100) NOT NULL,
     genreID INT NOT NULL,
     file VARCHAR(255) NOT NULL,
-    albumCover VARCHAR(255), -- Album cover can be optional
+    albumCover VARCHAR(255) NOT NULL,
     albumName VARCHAR(100) NOT NULL,
     albumArtist VARCHAR(100) NOT NULL,
     albumReleaseYear INT NOT NULL,

@@ -10,7 +10,7 @@ public class Song {
     private String albumName;
     private String artistName;
     private int albumReleaseYear;
-    private String genre; // Assuming genre name is already resolved before setting here
+    private String genre;
     private String albumCoverPath;
     private String audioFilePath;
 

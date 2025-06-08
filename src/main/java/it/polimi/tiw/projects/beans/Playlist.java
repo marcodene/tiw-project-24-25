@@ -79,7 +79,7 @@ public class Playlist {
 			}
 		}
 		jsonPlaylist.put("songs", jsonSongs);
-        // Include customSongOrder if it's set, RIA can use this directly
+        
         if (customSongOrder != null) {
             jsonPlaylist.put("customSongOrder", customSongOrder);
         }

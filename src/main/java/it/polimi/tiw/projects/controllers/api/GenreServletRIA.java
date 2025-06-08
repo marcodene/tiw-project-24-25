@@ -37,16 +37,6 @@ public class GenreServletRIA extends HttpServlet {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
 
-        // Optional: Check for user session if genres should be protected,
-        // but typically genre lists are public. For this project, let's assume public.
-        /* 
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("user") == null) {
-            sendError(response, HttpServletResponse.SC_UNAUTHORIZED, "User not authenticated.");
-            return;
-        }
-        */
-
         GenreDAO genreDAO = new GenreDAO(connection);
         try {
             List<String> genreNames = genreDAO.getAllGenresNames();
