@@ -98,13 +98,32 @@ public class GetFile extends ServletBase {
                              file.getName().replaceAll("[\"]", "") + "\"");
             
             // Stream del file
-            Files.copy(file.toPath(), response.getOutputStream());
+            try {
+                Files.copy(file.toPath(), response.getOutputStream());
+            } catch (org.apache.catalina.connector.ClientAbortException e) {
+                // Il client ha interrotto la connessione: è normale e non serve mostrarlo come errore grave
+                System.out.println("Client aborted connection during file download: " + e.getMessage());
+            } catch (IOException e) {
+                if (!response.isCommitted()) {
+                    response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Errore durante la trasmissione del file");
+                } else {
+                    System.err.println("IOException dopo che la risposta è stata committata: " + e.getMessage());
+                }
+            } catch (Exception e) {
+                if (!response.isCommitted()) {
+                    response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Errore imprevisto");
+                } else {
+                    System.err.println("Errore imprevisto dopo la risposta: " + e.getMessage());
+                }
+            }
             
         } catch (SecurityException e) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access denied");
         } catch (FileNotFoundException e) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "File not found");
         } catch (Exception e) {
+        	System.out.println("Errore ricevuto : " + e);
+        	e.printStackTrace();
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error serving file");
         }
     }
