@@ -269,21 +269,10 @@ public class SongDAO {
 	}
 	
 	private void deletePhysicalFiles(Song song) {
-	    if (song.getAlbumCoverPath() != null) {
-	        File coverFile = new File(FileStorageManager.getBaseStoragePath() + 
-	                                  song.getAlbumCoverPath());
-	        if (coverFile.exists()) {
-	            coverFile.delete();
-	        }
-	    }
-	    
-	    if (song.getAudioFilePath() != null) {
-	        File audioFile = new File(FileStorageManager.getBaseStoragePath() + 
-	                                  song.getAudioFilePath());
-	        if (audioFile.exists()) {
-	            audioFile.delete();
-	        }
-	    }
+	    FileStorageManager.cleanupFiles(
+	        song.getAlbumCoverPath(),
+	        song.getAudioFilePath()
+	    );
 	}
 	
 	public boolean songBelongsToUser(int songID, int userID) throws SQLException {
