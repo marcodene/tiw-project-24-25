@@ -169,25 +169,29 @@ public class SongServletRIA extends HttpServlet {
             return;
         }
 
-        // Create and save the song
+     // Create and save the song
         try {
             Song createdSong = createAndSaveSong(formData, filePaths, user.getId());
             if (createdSong != null) {
                 sendSuccess(response, createdSong.toJSON(), HttpServletResponse.SC_CREATED);
             } else {
-                // Clean up files since database operation failed
-                deleteUploadedFiles(filePaths.get("imagePath"), filePaths.get("audioPath"));
+                FileStorageManager.cleanupFiles(
+                    filePaths.get("imagePath"), 
+                    filePaths.get("audioPath")
+                );
                 sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Song creation failed in database.");
             }
         } catch (SQLException e) {
-            e.printStackTrace();
-            // Clean up files since database operation failed
-            deleteUploadedFiles(filePaths.get("imagePath"), filePaths.get("audioPath"));
+            FileStorageManager.cleanupFiles(
+                filePaths.get("imagePath"), 
+                filePaths.get("audioPath")
+            );
             sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Database error during song upload: " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
-            // Clean up files since an error occurred
-            deleteUploadedFiles(filePaths.get("imagePath"), filePaths.get("audioPath"));
+            FileStorageManager.cleanupFiles(
+                filePaths.get("imagePath"), 
+                filePaths.get("audioPath")
+            );
             sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "An unexpected error occurred: " + e.getMessage());
         }
     }
@@ -253,18 +257,18 @@ public class SongServletRIA extends HttpServlet {
         // Validate audio file
         if (audioFilePart == null || audioFilePart.getSize() == 0) {
             errors.put("audioFile", "Audio file is required.");
-        } else if (audioFilePart.getSize() > 10 * 1024 * 1024) { // 10MB limit
+        } else if (audioFilePart.getSize() > 10 * 1024 * 1024) { // Manteniamo controllo dimensione esplicito
             errors.put("audioFile", "Audio file must be smaller than 10MB.");
-        } else if (!isValidAudioFile(audioFilePart)) {
+        } else if (!FileStorageManager.isValidAudioFile(audioFilePart)) { // ===== USA FileStorageManager =====
             errors.put("audioFile", "Invalid audio file format. Only MP3, WAV, OGG, and M4A files are allowed.");
         }
 
         // Validate image file
         if (imageFilePart == null || imageFilePart.getSize() == 0) {
             errors.put("imageFile", "Image file is required.");
-        } else if (imageFilePart.getSize() > 10 * 1024 * 1024) { // 10MB limit
+        } else if (imageFilePart.getSize() > 10 * 1024 * 1024) {
             errors.put("imageFile", "Image file must be smaller than 10MB.");
-        } else if (!isValidImageFile(imageFilePart)) {
+        } else if (!FileStorageManager.isValidImageFile(imageFilePart)) { // ===== USA FileStorageManager =====
             errors.put("imageFile", "Invalid image file format. Only JPG, PNG, and GIF files are allowed.");
         }
     }
@@ -305,43 +309,30 @@ public class SongServletRIA extends HttpServlet {
     private Map<String, String> uploadFiles(Part audioFilePart, Part imageFilePart) throws IOException {
         Map<String, String> filePaths = new HashMap<>();
         
-        // Save audio file
-        String audioFileName = getUniqueFileName(audioFilePart.getSubmittedFileName());
-        String audioFilesDir = FileStorageManager.getAudioFilesPath(); // Full path for saving
-        File audioUploadDir = new File(audioFilesDir);
-        if (!audioUploadDir.exists()) audioUploadDir.mkdirs();
-        File audioFile = new File(audioUploadDir, audioFileName);
-        
-        try (InputStream input = audioFilePart.getInputStream()) {
-            Files.copy(input, audioFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            // Store ONLY the relative path
-            String relativeAudioPath = "/songs/" + audioFileName;
-            filePaths.put("audioPath", relativeAudioPath);
-        }
-
-        // Save image file (if not provided usa a default cover)
-    	String imageFileName;
-    	if(imageFilePart != null && imageFilePart.getSize() > 0)
-    		imageFileName = getUniqueFileName(imageFilePart.getSubmittedFileName());
-    	else
-    		imageFileName = "default.jpg";
-        String coverImagesDir = FileStorageManager.getCoverImagesPath(); // Full path for saving
-        File imageUploadDir = new File(coverImagesDir);
-        if (!imageUploadDir.exists()) imageUploadDir.mkdirs();
-        File imageFile = new File(imageUploadDir, imageFileName);
-        
-        try (InputStream input = imageFilePart.getInputStream()) {
-            Files.copy(input, imageFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            // Store ONLY the relative path
-            String relativeImagePath = "/covers/" + imageFileName;
-            filePaths.put("imagePath", relativeImagePath);
+        try {
+            String audioPath = FileStorageManager.saveUploadedFile(audioFilePart, "songs");
+            filePaths.put("audioPath", audioPath);
+            
+            // Salva immagine (gestisce anche default se necessario)
+            if (imageFilePart != null && imageFilePart.getSize() > 0) {
+                String imagePath = FileStorageManager.saveUploadedFile(imageFilePart, "covers");
+                filePaths.put("imagePath", imagePath);
+            } else {
+                // Usa immagine default
+                filePaths.put("imagePath", "/covers/default.jpg");
+            }
+            
+            return filePaths;
+            
+        } catch (SecurityException e) {
+            // Cleanup di eventuali file già salvati
+            FileStorageManager.cleanupFiles(filePaths.get("audioPath"));
+            throw new IOException("Security error during file upload: " + e.getMessage(), e);
         } catch (IOException e) {
-            // If image saving fails, clean up audio file and throw exception
-            if (audioFile.exists()) audioFile.delete();
+            // Cleanup in caso di errore
+            FileStorageManager.cleanupFiles(filePaths.get("audioPath"), filePaths.get("imagePath"));
             throw e;
         }
-    
-        return filePaths;
     }
 
     /**
@@ -449,35 +440,6 @@ public class SongServletRIA extends HttpServlet {
                                 contentType.equals("application/ogg"));
         
         return validExtension && validMimeType;
-    }
-    
-    // Helper method to delete uploaded files in case of errors
-    private void deleteUploadedFiles(String coverPath, String audioPath) {
-        if (coverPath != null) {
-            try {
-                // Remove leading slash if present for correct path construction
-                String relativePath = coverPath.startsWith("/") ? coverPath.substring(1) : coverPath;
-                File coverFile = new File(FileStorageManager.getBaseStoragePath(), relativePath);
-                if (coverFile.exists()) {
-                    coverFile.delete();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        
-        if (audioPath != null) {
-            try {
-                // Remove leading slash if present for correct path construction
-                String relativePath = audioPath.startsWith("/") ? audioPath.substring(1) : audioPath;
-                File audioFile = new File(FileStorageManager.getBaseStoragePath(), relativePath);
-                if (audioFile.exists()) {
-                    audioFile.delete();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
     }
     
     private void sendSuccess(HttpServletResponse response, Object data, int statusCode) throws IOException {

@@ -40,9 +40,6 @@ public class LoginServletRIA extends HttpServlet {
         String username = request.getParameter("username");
         String password = request.getParameter("password");
         
-        System.out.println(request);
-        System.out.println(request.getParameter("username"));
-        System.out.println(request.getParameter("password"));
 
         if (username == null || username.trim().isEmpty() || password == null || password.trim().isEmpty()) {
             sendError(response, HttpServletResponse.SC_BAD_REQUEST, "Username and password are required.");

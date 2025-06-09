@@ -179,46 +179,15 @@ public class SongDAO {
 	}
 	
 	private void deletePhysicalFiles(Song song) {
-	    String baseStoragePath = null;
-	    Path basePath = null;
+	    FileStorageManager.cleanupFiles(
+	        song.getAlbumCoverPath(),
+	        song.getAudioFilePath()
+	    );
 	    
-	    try {
-	        baseStoragePath = FileStorageManager.getBaseStoragePath();
-	        
-	        if (baseStoragePath == null || baseStoragePath.trim().isEmpty()) {
-	            throw new IllegalStateException("FileStorageManager not properly initialized - base storage path is null or empty");
-	        }
-	        
-	        // Convert to Path for safe handling and normalize
-	        basePath = Paths.get(baseStoragePath).toAbsolutePath().normalize();
-	        
-	    } catch (Exception e) {
-	        System.err.println("Error: Could not get base storage path for deleting files. " + e.getMessage());
-	        System.err.println("File deletion aborted to prevent incorrect path operations.");
-	        return;
-	    }
-
-	    // Securely delete cover file with path validation
-	    if (song.getAlbumCoverPath() != null && !song.getAlbumCoverPath().isEmpty()) {
-	        try {
-	            if (!deleteFileSecurely(basePath, song.getAlbumCoverPath(), "covers", "cover")) {
-	                System.err.println("Failed to securely delete cover file: " + song.getAlbumCoverPath());
-	            }
-	        } catch (Exception e) {
-	            System.err.println("Error deleting cover file: " + e.getMessage());
-	        }
-	    }
-	    
-	    // Securely delete audio file with path validation
-	    if (song.getAudioFilePath() != null && !song.getAudioFilePath().isEmpty()) {
-	        try {
-	            if (!deleteFileSecurely(basePath, song.getAudioFilePath(), "songs", "audio")) {
-	                System.err.println("Failed to securely delete audio file: " + song.getAudioFilePath());
-	            }
-	        } catch (Exception e) {
-	            System.err.println("Error deleting audio file: " + e.getMessage());
-	        }
-	    }
+	    // Il metodo cleanupFiles gestisce automaticamente:
+	    // - Validazione dei percorsi
+	    // - Controlli di sicurezza
+	    // - Gestione degli errori (best effort)
 	}
 	
 	/**
