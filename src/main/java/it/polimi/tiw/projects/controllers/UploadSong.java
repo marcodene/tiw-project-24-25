@@ -78,7 +78,7 @@ public class UploadSong extends ServletBase {
         String albumCoverPath = null;
         
         try {
-            // ===== PARSING E VALIDAZIONE PARAMETRI (rimane uguale) =====
+            // ===== PARSING E VALIDAZIONE PARAMETRI =====
             songName = StringEscapeUtils.escapeJava(request.getParameter("songName"));
             if (!isEmpty(songName)) {
                 formValues.put("songName", songName);
@@ -179,7 +179,6 @@ public class UploadSong extends ServletBase {
             
             // ===== SE NON CI SONO ERRORI, PROCEDI CON L'UPLOAD =====
             if (!hasErrors) {
-                // ===== USA FileStorageManager PER SALVARE I FILE =====
                 try {
                     albumCoverPath = FileStorageManager.saveUploadedFile(albumCoverPart, "covers");
                     songFilePath = FileStorageManager.saveUploadedFile(songFilePart, "songs");
@@ -199,7 +198,6 @@ public class UploadSong extends ServletBase {
                     boolean success = songDAO.uploadSong(song);
                 
                     if (!success) {
-                        // ===== USA FileStorageManager PER CLEANUP =====
                         FileStorageManager.cleanupFiles(albumCoverPath, songFilePath);
                         errorMessages.put("generalError", "Non è stato possibile caricare la canzone. Controlla che i valori siano corretti.");
                         hasErrors = true;
