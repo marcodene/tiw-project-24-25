@@ -233,6 +233,20 @@ public class SongServletRIA extends HttpServlet {
         if (genreName == null || genreName.trim().isEmpty()) 
             errors.put("genreName", "Genre is required.");
         
+        // Trim and store text inputs
+        if (title != null && !title.trim().isEmpty()) {
+            formData.put("title", title.trim());
+        }
+        if (albumName != null && !albumName.trim().isEmpty()) {
+            formData.put("albumName", albumName.trim());
+        }
+        if (artistName != null && !artistName.trim().isEmpty()) {
+            formData.put("artistName", artistName.trim());
+        }
+        if (genreName != null && !genreName.trim().isEmpty()) {
+            formData.put("genreName", genreName.trim());
+        }
+        
         // Validate year format and range
         if (yearStr != null && !yearStr.trim().isEmpty()) {
             try {
@@ -259,7 +273,7 @@ public class SongServletRIA extends HttpServlet {
             errors.put("audioFile", "Audio file is required.");
         } else if (audioFilePart.getSize() > 10 * 1024 * 1024) { // Manteniamo controllo dimensione esplicito
             errors.put("audioFile", "Audio file must be smaller than 10MB.");
-        } else if (!FileStorageManager.isValidAudioFile(audioFilePart)) { // ===== USA FileStorageManager =====
+        } else if (!FileStorageManager.isValidAudioFile(audioFilePart)) {
             errors.put("audioFile", "Invalid audio file format. Only MP3, WAV, OGG, and M4A files are allowed.");
         }
 
@@ -268,7 +282,7 @@ public class SongServletRIA extends HttpServlet {
             errors.put("imageFile", "Image file is required.");
         } else if (imageFilePart.getSize() > 10 * 1024 * 1024) {
             errors.put("imageFile", "Image file must be smaller than 10MB.");
-        } else if (!FileStorageManager.isValidImageFile(imageFilePart)) { // ===== USA FileStorageManager =====
+        } else if (!FileStorageManager.isValidImageFile(imageFilePart)) {
             errors.put("imageFile", "Invalid image file format. Only JPG, PNG, and GIF files are allowed.");
         }
     }

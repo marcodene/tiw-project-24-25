@@ -61,13 +61,20 @@ const PlayerComponent = (() => {
 
         const coverPath = currentSongObj.albumCoverPath ? `${baseURL}/GetFile${currentSongObj.albumCoverPath}` : '/covers/default.jpg'; // Adjust default path
         
-        detailsDiv.innerHTML = `
-            <img src="${coverPath}" alt="Album cover for ${currentSongObj.albumName}" class="player-album-cover" style="max-width: 300px; margin-bottom: 15px;">
-            <p><strong>Title:</strong> ${currentSongObj.name}</p>
-            <p><strong>Artist:</strong> ${currentSongObj.artistName}</p>
-            <p><strong>Album:</strong> ${currentSongObj.albumName} (${currentSongObj.albumReleaseYear})</p>
-            <p><strong>Genre:</strong> ${currentSongObj.genre}</p>
-        `;
+        detailsDiv.innerHTML = SecurityUtils.createSafeHTML(`
+            <img src="{{coverPath}}" alt="Album cover for {{albumName}}" class="player-album-cover" style="max-width: 300px; margin-bottom: 15px;">
+            <p><strong>Title:</strong> {{name}}</p>
+            <p><strong>Artist:</strong> {{artistName}}</p>
+            <p><strong>Album:</strong> {{albumName}} ({{albumReleaseYear}})</p>
+            <p><strong>Genre:</strong> {{genre}}</p>
+        `, {
+            coverPath: coverPath,
+            albumName: currentSongObj.albumName,
+            name: currentSongObj.name,
+            artistName: currentSongObj.artistName,
+            albumReleaseYear: currentSongObj.albumReleaseYear,
+            genre: currentSongObj.genre
+        });
         sectionElement.appendChild(detailsDiv);
     };
 

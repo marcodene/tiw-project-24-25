@@ -19,13 +19,13 @@ const AccountManager = (() => {
         const accountSection = document.createElement('section');
         accountSection.className = 'account-management card';
         
-        accountSection.innerHTML = `
+        accountSection.innerHTML = SecurityUtils.createSafeHTML(`
             <h2>Account Management</h2>
             <div class="user-info">
                 <h3>User Information</h3>
-                <p><strong>Username:</strong> ${currentUser.username}</p>
-                <p><strong>Name:</strong> ${currentUser.name}</p>
-                <p><strong>Surname:</strong> ${currentUser.surname}</p>
+                <p><strong>Username:</strong> {{username}}</p>
+                <p><strong>Name:</strong> {{name}}</p>
+                <p><strong>Surname:</strong> {{surname}}</p>
             </div>
             
             <div class="danger-zone">
@@ -37,7 +37,11 @@ const AccountManager = (() => {
             <div class="back-navigation">
                 <button id="backToHomeBtn" class="back-btn">Back to Home</button>
             </div>
-        `;
+        `, {
+            username: currentUser.username,
+            name: currentUser.name,
+            surname: currentUser.surname
+        });
 
         container.appendChild(accountSection);
 

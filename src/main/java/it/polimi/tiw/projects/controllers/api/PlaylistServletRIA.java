@@ -127,6 +127,12 @@ public class PlaylistServletRIA extends HttpServlet {
                 Map<String, String> errors = new HashMap<>();
                 if (playlistName == null || playlistName.trim().isEmpty()) errors.put("name", "Playlist name required.");
                 if (songIdDoubles == null || songIdDoubles.isEmpty()) errors.put("songIDs", "At least one song ID required.");
+                
+                // Trim playlist name
+                if (playlistName != null) {
+                    playlistName = playlistName.trim();
+                }
+                
                 if (!errors.isEmpty()) {
                     sendError(response, HttpServletResponse.SC_BAD_REQUEST, "Validation failed", errors);
                     return;

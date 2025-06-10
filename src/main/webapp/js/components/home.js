@@ -64,14 +64,17 @@ const Home = (() => {
             const card = document.createElement('div');
             card.className = 'playlist-card';
             
-            card.innerHTML = `
-                <h4>${playlist.name}</h4>
-                <p>${playlist.creationDate ? playlist.creationDate : ""}</p>
+            card.innerHTML = SecurityUtils.createSafeHTML(`
+                <h4>{{name}}</h4>
+                <p>{{creationDate}}</p>
                 <div class="playlist-actions">
                     <button class="view-btn">View</button>
                     <button class="delete-btn">Delete</button>
                 </div>
-            `;
+            `, {
+                name: playlist.name,
+                creationDate: playlist.creationDate || ""
+            });
 
             // Add click event to view button
             const viewButton = card.querySelector('.view-btn');
@@ -137,12 +140,18 @@ const Home = (() => {
         form.id = 'createPlaylistForm';
         let songsHtml = '<p>No songs available to add. Upload songs first.</p>';
         if (allSongs && allSongs.length > 0) {
-            songsHtml = allSongs.map(song => `
+            songsHtml = allSongs.map(song => SecurityUtils.createSafeHTML(`
                 <div>
-                    <input type="checkbox" id="song-${song.ID}" name="selectedSongs" value="${song.ID}">
-                    <label for="song-${song.ID}">${song.name} - ${song.artistName}</label>
+                    <input type="checkbox" id="song-{{songId}}" name="selectedSongs" value="{{songId}}">
+                    <label for="song-{{songId}}">{{name}} - {{artistName}} ({{albumName}}, {{albumReleaseYear}})</label>
                 </div>
-            `).join('');
+            `, {
+                songId: song.ID,
+                name: song.name,
+                artistName: song.artistName,
+                albumName: song.albumName,
+                albumReleaseYear: song.albumReleaseYear
+            })).join('');
         }
 
         form.innerHTML = `

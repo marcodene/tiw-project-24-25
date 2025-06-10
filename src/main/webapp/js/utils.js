@@ -114,3 +114,60 @@ const SessionManager = {
         return user && user.username && user.id;
     }
 };
+
+/**
+ * Security utilities for preventing XSS attacks
+ */
+const SecurityUtils = {
+    /**
+     * Escapes HTML special characters to prevent XSS attacks
+     * @param {string} str - The string to escape
+     * @returns {string} The escaped string
+     */
+    escapeHtml(str) {
+        if (str == null) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#x27;')
+            .replace(/\//g, '&#x2F;');
+    },
+
+    /**
+     * Creates a text node with safe content - safer alternative to innerHTML
+     * @param {string} text - The text content
+     * @returns {Text} Text node with safe content
+     */
+    createSafeTextNode(text) {
+        return document.createTextNode(text || '');
+    },
+
+    /**
+     * Safely sets text content of an element
+     * @param {Element} element - The target element
+     * @param {string} text - The text to set
+     */
+    setSafeTextContent(element, text) {
+        if (element) {
+            element.textContent = text || '';
+        }
+    },
+
+    /**
+     * Creates HTML with escaped user content
+     * @param {string} template - HTML template with {{placeholder}} markers
+     * @param {Object} data - Data object with values to escape and substitute
+     * @returns {string} Safe HTML string
+     */
+    createSafeHTML(template, data) {
+        let result = template;
+        for (const [key, value] of Object.entries(data)) {
+            const placeholder = `{{${key}}}`;
+            const escapedValue = this.escapeHtml(value);
+            result = result.replace(new RegExp(placeholder, 'g'), escapedValue);
+        }
+        return result;
+    }
+};

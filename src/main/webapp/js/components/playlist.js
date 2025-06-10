@@ -40,7 +40,7 @@ const PlaylistComponent = (() => {
 	                    container.innerHTML = '';
 	                    
 	                    const header = document.createElement('h2');
-	                    header.textContent = `Playlist: ${currentPlaylistObj.name}`;
+	                    SecurityUtils.setSafeTextContent(header, `Playlist: ${currentPlaylistObj.name}`);
 	                    container.appendChild(header);
 
 	                    const actionButtons = document.createElement('div');
@@ -113,11 +113,16 @@ const PlaylistComponent = (() => {
             songCard.className = 'song-card';
             // Use a placeholder if albumCoverPath is null or empty
             const coverPath = `${baseURL}/GetFile${song.albumCoverPath}`;
-            songCard.innerHTML = `
-                <img src="${coverPath}" alt="${song.albumName}" width="100" height="100" style="object-fit: cover;">
-                <h4>${song.name}</h4>
-                <p>${song.artistName}</p>
-            `;
+            songCard.innerHTML = SecurityUtils.createSafeHTML(`
+                <img src="{{coverPath}}" alt="{{albumName}}" width="100" height="100" style="object-fit: cover;">
+                <h4>{{name}}</h4>
+                <p>{{artistName}}</p>
+            `, {
+                coverPath: coverPath,
+                albumName: song.albumName,
+                name: song.name,
+                artistName: song.artistName
+            });
             songCard.addEventListener('click', () => {
                 State.setCurrentSong(song);
                 Router.navigateTo('player', song);
@@ -198,12 +203,16 @@ const PlaylistComponent = (() => {
         const form = document.createElement('form');
         form.id = 'addSongsToPlaylistForm';
         
-        let songsHtml = availableSongs.map(song => `
+        let songsHtml = availableSongs.map(song => SecurityUtils.createSafeHTML(`
             <div>
-                <input type="checkbox" id="addsong-${song.ID}" name="selectedSongsToAdd" value="${song.ID}">
-                <label for="addsong-${song.ID}">${song.name} - ${song.artistName}</label>
+                <input type="checkbox" id="addsong-{{songId}}" name="selectedSongsToAdd" value="{{songId}}">
+                <label for="addsong-{{songId}}">{{name}} - {{artistName}}</label>
             </div>
-        `).join('');
+        `, {
+            songId: song.ID,
+            name: song.name,
+            artistName: song.artistName
+        })).join('');
 
         form.innerHTML = `
             <fieldset>
