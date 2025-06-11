@@ -14,7 +14,7 @@ const Router = (() => {
                 appContentContainer.innerHTML = '<h2>Home View (Component not fully loaded)</h2>';
             }
         },
-        'playlist': (data) => { // data could be playlistId or playlist object
+        'playlist': (data) => { // data is a playlist object
             // Example: PlaylistDetail.render(appContentContainer, data);
             if (typeof PlaylistComponent !== 'undefined' && PlaylistComponent.renderDetails) {
                 PlaylistComponent.renderDetails(appContentContainer, data);

@@ -8,6 +8,7 @@ const App = (() => {
      */
     const init = (userData) => {
         State.setCurrentUser(userData);
+		SessionManager.setUser(userData);
         currentUser = userData; // Local cache for convenience
         
         console.log("App initialized for user:", currentUser.username);
@@ -96,7 +97,6 @@ const App = (() => {
         const appContent = document.getElementById('app-content');
         if(appContent) appContent.innerHTML = '';
         console.log("App reset.");
-        // Auth.showLoginForm() will be called by Auth.handleLogout
     };
     
     return {

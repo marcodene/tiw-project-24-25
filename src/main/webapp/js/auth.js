@@ -248,7 +248,7 @@ const Auth = (() => {
 					const serverUser = parseServerResponse(req);
 					
 					if (serverUser) {
-						SessionManager.setUser(serverUser);
+						//SessionManager.setUser(serverUser);
 						resolve(serverUser);
 					} else {
 						SessionManager.clearUser();

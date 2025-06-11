@@ -78,19 +78,7 @@ public class UserDAO {
 				String audioFilePath = files[0];
 				String coverFilePath = files[1];
 				
-				if (audioFilePath != null && !audioFilePath.isEmpty()) {
-					File audioFile = new File(FileStorageManager.getBaseStoragePath() + audioFilePath);
-					if (audioFile.exists()) {
-						audioFile.delete();
-					}
-				}
-				
-				if (coverFilePath != null && !coverFilePath.isEmpty()) {
-					File coverFile = new File(FileStorageManager.getBaseStoragePath() + coverFilePath);
-					if (coverFile.exists()) {
-						coverFile.delete();
-					}
-				}
+				FileStorageManager.cleanupFiles(coverFilePath, audioFilePath);
 			}
 			
 			return true;

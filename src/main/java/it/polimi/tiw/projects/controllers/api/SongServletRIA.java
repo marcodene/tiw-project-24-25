@@ -164,7 +164,6 @@ public class SongServletRIA extends HttpServlet {
         try {
             filePaths = uploadFiles(audioFilePart, imageFilePart);
         } catch (IOException e) {
-            e.printStackTrace();
             sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error uploading files: " + e.getMessage());
             return;
         }

@@ -139,7 +139,7 @@ public class FileStorageManager {
      * @return true se il percorso è sicuro, false altrimenti
      */
     public static boolean isPathSafe(String relativePath) {
-        if (relativePath == null || relativePath.isEmpty()) {
+        if (relativePath == null || relativePath.trim().isEmpty()) {
             return false;
         }
         
@@ -322,9 +322,9 @@ public class FileStorageManager {
         File targetFile = new File(uploadDir, uniqueFileName);
         
         // Salva il file
-        try (InputStream input = filePart.getInputStream()) {
-            Files.copy(input, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        }
+        InputStream input = filePart.getInputStream();
+        Files.copy(input, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        
         
         // Ritorna il percorso relativo
         return "/" + directory + "/" + uniqueFileName;
@@ -411,7 +411,7 @@ public class FileStorageManager {
                     deleteFileSecurely(path);
                 } catch (Exception e) {
                     // Il cleanup deve essere "best effort"
-                    // Non propagare l'eccezione
+                    // Non propaga l'eccezione
                 }
             }
         }

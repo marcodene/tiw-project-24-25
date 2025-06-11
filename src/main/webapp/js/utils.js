@@ -26,7 +26,7 @@ function makeCall(method, url, data, cback, reset = true) {
         req.send(data);
     } else if (data === null || typeof data === 'undefined') {
         // Null/undefined - used for GET requests without body
-        console.log("\nSending null: ", data);
+        console.log("\nSending GET: ", data);
         req.send();
     } else if (data.tagName && data.tagName.toLowerCase() === 'form') {
         // HTML Form - used for login/register with standard form data

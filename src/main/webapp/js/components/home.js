@@ -78,8 +78,9 @@ const Home = (() => {
 
             // Add click event to view button
             const viewButton = card.querySelector('.view-btn');
-            viewButton.addEventListener('click', () => {
-                State.setCurrentPlaylist(playlist);
+            viewButton.addEventListener('click', (e) => {
+				e.stopPropagation();
+				State.setCurrentPlaylist(playlist);
                 Router.navigateTo('playlist', playlist);
             });
             
