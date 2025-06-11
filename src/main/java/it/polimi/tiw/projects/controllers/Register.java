@@ -10,7 +10,6 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.lang.StringEscapeUtils;
 
 import it.polimi.tiw.projects.dao.UserDAO;
 import it.polimi.tiw.projects.utils.FlashMessagesManager;
@@ -44,12 +43,12 @@ public class Register extends ServletBase {
         String successMessage = null;
         boolean hasErrors = false;
 
-        // Parsing e escape parametri
-        String username = StringEscapeUtils.escapeJava(request.getParameter("username"));
-        String name = StringEscapeUtils.escapeJava(request.getParameter("name"));
-        String surname = StringEscapeUtils.escapeJava(request.getParameter("surname"));
-        String password = StringEscapeUtils.escapeJava(request.getParameter("password"));
-        String confirmPassword = StringEscapeUtils.escapeJava(request.getParameter("confirmPassword"));
+        // Parsing parametri
+        String username = request.getParameter("username");
+        String name = request.getParameter("name");
+        String surname = request.getParameter("surname");
+        String password = request.getParameter("password");
+        String confirmPassword = request.getParameter("confirmPassword");
 
         UserDAO userDAO = new UserDAO(connection);
 
@@ -130,9 +129,10 @@ public class Register extends ServletBase {
         
         if (successMessage != null) {
             // SUCCESSO: Redirect alla login page con messaggio di successo
-        	FlashMessagesManager.addSuccessMessage(request, successMessage);
+        	
             String loginPath = getServletContext().getContextPath() + "/";
-            response.sendRedirect(loginPath);
+            doRedirect(request, response, loginPath, successMessage, null, null);
+            
         } else {
             // ERRORI: Usa doRedirect della ServletBase per gestire errori e form values
             Map<String, String> finalFormValues = null;

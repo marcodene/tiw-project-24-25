@@ -123,17 +123,6 @@ public abstract class ServletBase extends HttpServlet {
         response.sendRedirect(redirectPath);
     }
     
-    // Pattern Post-Redirect-Get semplificato
-    protected void doRedirect(HttpServletRequest request, HttpServletResponse response,
-                             String redirectPath, String successMessage) throws IOException {
-        doRedirect(request, response, redirectPath, successMessage, null, null);
-    }
-    
-    protected void doRedirect(HttpServletRequest request, HttpServletResponse response,
-                             String redirectPath, Map<String, String> errors) throws IOException {
-        doRedirect(request, response, redirectPath, null, errors, null);
-    }
-    
     // Parsing di parametri int
     protected int getIntParam(HttpServletRequest request, String paramName) {
         String param = request.getParameter(paramName);

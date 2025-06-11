@@ -9,9 +9,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.apache.commons.lang.StringEscapeUtils;
-
 import it.polimi.tiw.projects.dao.UserDAO;
 import it.polimi.tiw.projects.beans.User;
 
@@ -43,8 +40,8 @@ public class CheckLogin extends ServletBase {
         String password = null;
         
         try {
-            username = StringEscapeUtils.escapeJava(request.getParameter("username"));
-            password = StringEscapeUtils.escapeJava(request.getParameter("password"));
+            username = request.getParameter("username");
+            password = request.getParameter("password");
             
             // Validazione parametri utilizzando ServletBase
             if (isEmpty(username) || isEmpty(password)) {

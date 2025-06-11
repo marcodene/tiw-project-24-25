@@ -79,7 +79,7 @@ public class UploadSong extends ServletBase {
         
         try {
             // ===== PARSING E VALIDAZIONE PARAMETRI =====
-            songName = StringEscapeUtils.escapeJava(request.getParameter("songName"));
+            songName = request.getParameter("songName");
             if (!isEmpty(songName)) {
                 formValues.put("songName", songName);
             } else {
@@ -87,7 +87,7 @@ public class UploadSong extends ServletBase {
                 hasErrors = true;
             }
             
-            albumName = StringEscapeUtils.escapeJava(request.getParameter("albumName"));
+            albumName = request.getParameter("albumName");
             if (!isEmpty(albumName)) {
                 formValues.put("albumName", albumName);
             } else {
@@ -95,7 +95,7 @@ public class UploadSong extends ServletBase {
                 hasErrors = true;
             }
             
-            artistName = StringEscapeUtils.escapeJava(request.getParameter("artistName"));
+            artistName = request.getParameter("artistName");
             if (!isEmpty(artistName)) {
                 formValues.put("artistName", artistName);
             } else {
@@ -124,7 +124,7 @@ public class UploadSong extends ServletBase {
                 }
             }
             
-            genre = StringEscapeUtils.escapeJava(request.getParameter("genre"));
+            genre = request.getParameter("genre");
             if (!isEmpty(genre)) {
                 formValues.put("genre", genre);
             } else {

@@ -12,8 +12,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang.StringEscapeUtils;
-
 import it.polimi.tiw.projects.beans.User;
 import it.polimi.tiw.projects.dao.PlaylistDAO;
 import it.polimi.tiw.projects.dao.SongDAO;
@@ -65,7 +63,7 @@ public class CreatePlaylist extends ServletBase {
         PlaylistDAO playlistDAO = new PlaylistDAO(connection);
         
         try {
-            playlistName = StringEscapeUtils.escapeJava(request.getParameter("playlistName"));
+            playlistName = request.getParameter("playlistName");
             
             // Validazione utilizzando ServletBase
             if (isEmpty(playlistName)) {
