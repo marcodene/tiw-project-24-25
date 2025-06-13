@@ -128,8 +128,9 @@ public class PlaylistDAO {
 	                playlist.setID(result.getInt("ID"));
 	                playlist.setUserID(result.getInt("userID"));
 	                playlist.setName(result.getString("name"));
-	                Timestamp ts = result.getTimestamp("creationDate");
-	                playlist.setCreationDate(new java.sql.Date(ts.getTime()));
+	                //Timestamp ts = result.getTimestamp("creationDate");
+	                //playlist.setCreationDate(new java.sql.Date(ts.getTime()));
+	                playlist.setCreationDate(result.getDate("creationDate"));
 	                // Songs are not fetched here for efficiency in list view, fetch them on demand for playlist detail view
 	                playlists.add(playlist);
 	            }
