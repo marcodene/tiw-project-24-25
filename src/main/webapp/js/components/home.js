@@ -235,7 +235,9 @@ const Home = (() => {
                     if (req.status === 201 && response.status === 'success') {
                         messageArea.textContent = 'Playlist created successfully!';
                         messageArea.className = 'message-area success';
-                        State.updatePlaylist(response.data); // Add to global playlists
+                        console.log(response.data);
+						State.setPlaylists(response.data);
+						//State.updatePlaylist(response.data); // Add to global playlists
                         form.reset();
                     } else {
                         messageArea.textContent = `Error: ${response.message || 'Creation failed.'} ${response.errors ? JSON.stringify(response.errors) : ''}`;

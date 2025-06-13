@@ -152,7 +152,13 @@ public class PlaylistServletRIA extends HttpServlet {
                 
                 Playlist newPlaylist = playlistDAO.createPlaylist(playlistName, songIDs, user.getId());
                 if (newPlaylist != null) {
-                    sendSuccess(response, newPlaylist.toJSON(), HttpServletResponse.SC_CREATED);
+                	List<Playlist> playlists = playlistDAO.getAllPlaylistsByUserId(user.getId());
+                    List<Map<String, Object>> playlistsJson = new ArrayList<>();
+                    for (Playlist p : playlists) {
+                        playlistsJson.add(p.toJSON()); 
+                    }
+                    sendSuccess(response, playlistsJson, HttpServletResponse.SC_CREATED);
+                    //sendSuccess(response, newPlaylist.toJSON(), HttpServletResponse.SC_CREATED);
                 } else {
                     sendError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Playlist creation failed.");
                 }

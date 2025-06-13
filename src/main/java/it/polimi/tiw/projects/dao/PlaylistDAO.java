@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.sql.Date;
@@ -72,7 +73,8 @@ public class PlaylistDAO {
         
         try (PreparedStatement pstatement = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
             pstatement.setString(1, name);
-            pstatement.setDate(2, new Date(new java.util.Date().getTime())); // Current date
+            pstatement.setTimestamp(2, new Timestamp(System.currentTimeMillis()));
+            //pstatement.setDate(2, new Date(new java.util.Date().getTime())); // Current date
             pstatement.setInt(3, userID);
             
             int affectedRows = pstatement.executeUpdate();
@@ -126,7 +128,8 @@ public class PlaylistDAO {
 	                playlist.setID(result.getInt("ID"));
 	                playlist.setUserID(result.getInt("userID"));
 	                playlist.setName(result.getString("name"));
-	                playlist.setCreationDate(result.getDate("creationDate"));
+	                Timestamp ts = result.getTimestamp("creationDate");
+	                playlist.setCreationDate(new java.sql.Date(ts.getTime()));
 	                // Songs are not fetched here for efficiency in list view, fetch them on demand for playlist detail view
 	                playlists.add(playlist);
 	            }
@@ -200,10 +203,6 @@ public class PlaylistDAO {
 
         if (customOrder != null && !customOrder.isEmpty()) {
             // Fetch songs based on custom order
-            // This requires fetching songs one by one or a complex IN clause that preserves order.
-            // For simplicity, fetching one by one, but this is not efficient for large playlists.
-            // A JOIN with a temporary table or VALUES clause would be better in SQL.
-            // Or, fetch all and reorder in Java. Let's try fetching all and reordering.
             query = "SELECT s.*, g.name as genreName, ps.customOrder " +
                     "FROM Song s " +
                     "JOIN PlaylistSong ps ON s.ID = ps.songID " +
