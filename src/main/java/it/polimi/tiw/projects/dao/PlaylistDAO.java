@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -70,7 +71,8 @@ public class PlaylistDAO {
         try (PreparedStatement pstatement = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
             pstatement.setString(1, name);
             // Use current date for creation date
-            pstatement.setDate(2, new Date(new java.util.Date().getTime()));
+            //pstatement.setDate(2, new Date(new java.util.Date().getTime()));
+            pstatement.setTimestamp(2, new Timestamp(System.currentTimeMillis()));
             pstatement.setInt(3, userID);
             
             int affectedRows = pstatement.executeUpdate();
