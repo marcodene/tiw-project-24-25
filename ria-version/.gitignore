@@ -1,0 +1,85 @@
+# -------------------------------------------------------------------
+# === FILES TO KEEP IN THE PROJECT  ===
+!/.project
+!/.classpath
+!.settings/
+# -------------------------------------------------------------------
+
+
+
+uploads/
+
+# Eclipse project files
+.metadata/
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+
+# Java compiled files
+*.class
+*.war
+*.ear
+
+# Maven specific
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+
+# Gradle specific
+.gradle/
+build/
+
+# IntelliJ specific (just in case)
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# NetBeans specific (just in case)
+nbproject/
+nbactions.xml
+nb-configuration.xml
+
+# VSCode specific (just in case)
+.vscode/
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Log files
+*.log
+logs/
+
+# Database credentials and config files
+# Uncomment if you want to ignore them
+# src/main/webapp/META-INF/context.xml
+# configuration.properties
+
+# Sensitive information
+*.properties
+*.key
+*.pem
+
+# Build output directories
+build/
+dist/
+out/
+
+# Server specific
+Servers/
+src/main/webapp/WEB-INF/database.properties
