@@ -1,90 +1,90 @@
 # Music Playlist Manager
 
-*Progetto del corso "Tecnologie Informatiche per il Web" - Politecnico di Milano*
+*Web Technologies Project - Politecnico di Milano*
 
-## 🎵 Descrizione del Progetto
+## 🎵 Project Description
 
-Applicazione web per la gestione di playlist musicali personali, sviluppata in due versioni architetturali diverse per dimostrare l'evoluzione delle tecnologie web moderne.
+A web application for managing personal music playlists, developed in two different architectural versions to demonstrate the evolution of modern web technologies.
 
-### Funzionalità Principali
+### Main Features
 
-- **Gestione Utenti**: Registrazione, login e gestione del profilo personale
-- **Gestione Brani**: Upload, organizzazione e cancellazione di file musicali
-- **Playlist Personalizzate**: Creazione, modifica e gestione di playlist su misura
-- **Player Integrato**: Riproduzione audio con controlli avanzati
-- **Riorganizzazione**: Drag & drop per riordinare i brani nelle playlist
-- **Gestione File**: Upload di copertine e file audio con validazione
+- **User Management**: Registration, login, and personal profile management
+- **Song Management**: Upload, organize, and delete music files
+- **Custom Playlists**: Create, edit, and manage personalized playlists
+- **Integrated Player**: Audio playback with advanced controls
+- **Drag & Drop Reordering**: Reorder songs in playlists (RIA version)
+- **File Management**: Upload covers and audio files with validation
 
-## 🏗️ Architettura del Progetto
+## 🏗️ Project Architecture
 
-### Versione Pure HTML (Tradizionale)
-- **Paradigma**: Server-side rendering con navigazione multi-pagina
-- **Template Engine**: Thymeleaf per la generazione dinamica delle pagine
-- **Comunicazione**: Form-based con redirect/forward pattern
-- **Autenticazione**: Session-based con servlet filters
+### Pure HTML Version (Traditional)
+- **Paradigm**: Server-side rendering with multi-page navigation
+- **Template Engine**: Thymeleaf for dynamic page generation
+- **Communication**: Form-based with redirect/forward pattern
+- **Authentication**: Session-based with servlet filters
 
-### Versione RIA (Rich Internet Application)
-- **Paradigma**: Single Page Application (SPA) con JavaScript
-- **API**: RESTful endpoints per comunicazione asincrona
-- **Routing**: Client-side routing con History API
-- **Autenticazione**: Stateless con token validation
+### RIA Version (Rich Internet Application)
+- **Paradigm**: Single Page Application (SPA) with JavaScript
+- **API**: RESTful endpoints for asynchronous communication
+- **Routing**: Client-side routing with History API
+- **Authentication**: Stateless with token validation
 
-## 🛠️ Tecnologie Utilizzate
+## 🛠️ Technologies Used
 
 ### Backend
-- **Java 21** - Linguaggio di programmazione
-- **Servlet API 4.0** - Framework web per Java
+- **Java 21** - Programming language
+- **Servlet API 4.0** - Web framework for Java
 - **Apache Tomcat 10.1** - Application server
-- **MySQL 8.0** - Database relazionale
-- **Thymeleaf 3.1** - Template engine (versione Pure HTML)
-- **Gson 2.8** - Serializzazione JSON (versione RIA)
+- **MySQL 8.0** - Relational database
+- **Thymeleaf 3.1** - Template engine (Pure HTML version)
+- **Gson 2.8** - JSON serialization (RIA version)
 
 ### Frontend
-- **HTML5** - Struttura delle pagine
-- **CSS3** - Styling e responsive design
-- **JavaScript (ES6+)** - Logica client-side (versione RIA)
-- **Vanilla JavaScript** - Nessun framework esterno
+- **HTML5** - Page structure
+- **CSS3** - Styling and responsive design
+- **JavaScript (ES6+)** - Client-side logic (RIA version)
+- **Vanilla JavaScript** - No external frameworks
 
 ### Database
-- **MySQL** - Database principale
-- **Schema Relazionale** - Tabelle User, Song, Playlist, Genre
-- **Constraint di Integrità** - Foreign keys con CASCADE
-- **Indici Ottimizzati** - Per query performance
+- **MySQL** - Main database
+- **Relational Schema** - User, Song, Playlist, Genre tables
+- **Integrity Constraints** - Foreign keys with CASCADE
+- **Optimized Indexes** - For query performance
 
-## 🚀 Installazione e Setup
+## 🚀 Installation and Setup
 
-### Prerequisiti
-- **Java 21** o superiore
-- **Apache Tomcat 10.1** o superiore
-- **MySQL Server 8.0** o superiore
+### Prerequisites
+- **Java 21** or higher
+- **Apache Tomcat 10.1** or higher
+- **MySQL Server 8.0** or higher
 - **IDE** (Eclipse, IntelliJ IDEA, VS Code)
 
-### Configurazione Database
+### Database Configuration
 
-1. **Creazione Database**:
+1. **Create Database**:
 ```sql
 CREATE DATABASE db_progetto2425;
 USE db_progetto2425;
 ```
 
-2. **Esecuzione Schema**:
+2. **Execute Schema**:
 ```bash
 mysql -u root -p db_progetto2425 < database/schema.sql
 ```
 
-**Nota**: Il file `database/schema.sql` contiene lo schema completo compatibile con entrambe le versioni, includendo il campo `customOrder` necessario per la funzionalità di riordinamento della versione RIA.
+**Note**: The `database/schema.sql` file contains the complete schema compatible with both versions, including the `customOrder` field necessary for the RIA version's reordering functionality.
 
-### Configurazione Applicazione
+### Application Configuration
 
-⚠️ **IMPORTANTE**: Prima di eseguire l'applicazione, è necessario configurare i file di proprietà con le proprie credenziali e percorsi.
+⚠️ **IMPORTANT**: Before running the application, you must configure the properties files with your credentials and paths.
 
-#### File di Configurazione Richiesti
+#### Required Configuration Files
 
-I seguenti file devono essere creati manualmente (non sono inclusi nel repository per motivi di sicurezza):
+The following files must be created manually (not included in the repository for security reasons):
 
 **1. Database Configuration**
-- **Versione Pure HTML**: `pure-html-version/src/main/webapp/WEB-INF/database.properties`
-- **Versione RIA**: `ria-version/src/main/webapp/WEB-INF/database.properties`
+- **Pure HTML Version**: `pure-html-version/src/main/webapp/WEB-INF/database.properties`
+- **RIA Version**: `ria-version/src/main/webapp/WEB-INF/database.properties`
 
 ```properties
 # Database Connection Properties
@@ -95,8 +95,8 @@ dbPassword=your_database_password
 ```
 
 **2. File Storage Configuration**
-- **Versione Pure HTML**: `pure-html-version/src/main/webapp/WEB-INF/file_storage.properties`
-- **Versione RIA**: `ria-version/src/main/webapp/WEB-INF/file_storage.properties`
+- **Pure HTML Version**: `pure-html-version/src/main/webapp/WEB-INF/file_storage.properties`
+- **RIA Version**: `ria-version/src/main/webapp/WEB-INF/file_storage.properties`
 
 ```properties
 # File Storage Paths
@@ -105,156 +105,127 @@ coverImagesDir=covers
 audioFilesDir=songs
 ```
 
-#### Nota sulla Sicurezza
-- I file `.properties` sono esclusi dal controllo versione tramite `.gitignore`
-- **NON committare mai** questi file con credenziali reali
-- Utilizzare credenziali di database dedicate per lo sviluppo
-- Assicurarsi che le directory di upload abbiano i permessi corretti
+#### Security Note
+- The `.properties` files are excluded from version control via `.gitignore`
+- **NEVER commit** these files with real credentials
+- Use dedicated database credentials for development
+- Ensure upload directories have correct permissions
 
 ### Deployment
 
-#### Versione Pure HTML
-1. Compilare il progetto Java
-2. Creare il file WAR
-3. Deployare su Tomcat
-4. Accedere a `http://localhost:8080/progetto-tiw-24-25`
+#### Pure HTML Version
+1. Compile the Java project
+2. Create the WAR file
+3. Deploy to Tomcat
+4. Access at `http://localhost:8080/progetto-tiw-24-25-pureHTML`
 
-#### Versione RIA
-1. Compilare il progetto Java
-2. Creare il file WAR
-3. Deployare su Tomcat
-4. Accedere a `http://localhost:8080/progetto-tiw-24-25-ria`
+#### RIA Version
+1. Compile the Java project
+2. Create the WAR file
+3. Deploy to Tomcat
+4. Access at `http://localhost:8080/progetto-tiw-24-25-RIA`
 
-## 📁 Struttura del Progetto
+## 📁 Project Structure
 
 ```
-music-playlist-manager/
-├── pure-html-version/          # Versione tradizionale
-│   ├── src/main/java/          # Servlet e logica business
-│   └── src/main/webapp/        # Template Thymeleaf e CSS
-├── ria-version/                # Versione SPA
-│   ├── src/main/java/          # API REST controllers
+tiw-project-24-25/
+├── pure-html-version/          # Traditional version
+│   ├── src/main/java/          # Servlets and business logic
+│   └── src/main/webapp/        # Thymeleaf templates and CSS
+├── ria-version/                # SPA version
+│   ├── src/main/java/          # REST API controllers
 │   └── src/main/webapp/        # JavaScript, HTML, CSS
-├── shared/                     # Componenti condivisi
-│   ├── java/beans/             # Modelli dati
-│   ├── java/dao/               # Database access objects
-│   └── java/utils/             # Utility classes
-├── database/                   # Scripts SQL
-├── docs/                       # Documentazione tecnica
-└── sample-uploads/             # File di esempio
+├── database/                   # SQL scripts
+│   └── schema.sql              # Unified database schema
+├── docs/                       # Technical documentation
+│   ├── requirements.pdf        # Project requirements
+│   └── presentation.pdf        # Project presentation
+└── sample-uploads/             # Example files
+    ├── covers/                 # Sample album covers
+    └── songs/                  # Sample audio files
 ```
 
-## 🔄 Differenze tra le Versioni
+## 🔄 Version Differences
 
-| Aspetto | Pure HTML | RIA |
-|---------|-----------|-----|
-| **Architettura** | Multi-page | Single-page |
-| **Rendering** | Server-side | Client-side |
-| **Comunicazione** | Form POST/GET | AJAX/Fetch API |
-| **Navigazione** | Page reload | Dynamic routing |
-| **Stato** | Session-based | JavaScript state |
-| **Performance** | Server load | Client load |
-| **SEO** | Ottimizzato | Richiede configurazione |
+| Aspect | Pure HTML | RIA |
+|--------|-----------|-----|
+| **Architecture** | Multi-page application | Single Page Application |
+| **Navigation** | Page reload with server redirect | Asynchronous without page refresh |
+| **Rendering** | Server-side with Thymeleaf | Client-side with JavaScript |
+| **Communication** | Form POST/GET | RESTful API endpoints |
+| **Playlist Ordering** | Default alphabetical | Drag & drop with custom ordering |
 
-## 🎯 Funzionalità Dettagliate
+## 🎯 Main Features
 
-### Gestione Utenti
-- **Registrazione**: Validazione lato server e client
-- **Login**: Autenticazione con sessione/token
-- **Profilo**: Visualizzazione e modifica dati personali
-- **Sicurezza**: Password hashing e validation
+### Home Page
+- List of playlists ordered by creation date (descending)
+- Form to upload new songs with metadata (title, album, artist, year, genre)
+- Form to create new playlists
+- Song list ordered by artist and album release year
 
-### Gestione Brani
-- **Upload**: Supporto MP3 con validazione MIME type
-- **Metadati**: Titolo, artista, genere, durata
-- **Copertine**: Upload immagini con resize automatico
-- **Organizzazione**: Filtri per genere e ricerca
+### Playlist Page
+- Grid view of songs (5 columns display)
+- Navigation between song groups (PREVIOUS/NEXT)
+- Form to add songs to playlist
+- Custom ordering with drag & drop (RIA version only)
 
-### Playlist Management
-- **Creazione**: Nome personalizzato e descrizione
-- **Modifica**: Aggiunta/rimozione brani
-- **Riordinamento**: Drag & drop interface (RIA)
-- **Condivisione**: Gestione privacy e accesso
+### Player Page
+- Song details display
+- Audio player for playback
+- Delete song functionality
 
-### Player Audio
-- **Controlli**: Play, pause, stop, volume
-- **Playlist**: Riproduzione sequenziale
-- **Visualizzazione**: Waveform e progress bar
-- **Modalità**: Random, repeat, single
+### Account Management
+- User registration and login
+- Personal account page
+- Delete operations (songs, playlists, account)
+- Secure logout with session invalidation
 
-## 🧪 Testing
+### Additional Features
+- Private playlists (not shared between users)
+- Post-Redirect-Get pattern to prevent double submissions
+- Ownership validation for all operations
+- 5 songs per page pagination in playlists
 
-### Test Unitari
-- **DAO Testing**: Validazione accesso database
-- **Controller Testing**: Test logica business
-- **Integration Testing**: Test end-to-end
+## 🔒 Security
 
-### Test Manuali
-- **Functional Testing**: Ogni funzionalità
-- **Security Testing**: Validazione input
-- **Performance Testing**: Carico e stress
-- **Usability Testing**: Esperienza utente
-
-## 🔒 Sicurezza
-
-### Misure Implementate
-- **Input Validation**: Sanitizzazione dati utente
+### Implemented Measures
+- **Input Validation**: User data sanitization
 - **SQL Injection Prevention**: Prepared statements
 - **XSS Protection**: Output encoding
 - **CSRF Protection**: Token validation
-- **File Upload Security**: Validazione MIME type
-- **Authentication**: Session management sicuro
+- **File Upload Security**: MIME type validation
+- **Authentication**: Secure session management
 
 ## 📊 Database Schema
 
-### Tabelle Principali
-- **User**: Informazioni utente e credenziali
-- **Song**: Metadati brani e file paths
-- **Playlist**: Playlist utente
-- **Genre**: Generi musicali
-- **PlaylistSong**: Relazione many-to-many
+### Main Tables
+- **User**: User information and credentials
+- **Song**: Track metadata and file paths
+- **Playlist**: User playlists
+- **Genre**: Music genres
+- **PlaylistSong**: Many-to-many relationship
 
-### Relazioni
+### Relationships
 - User 1:N Playlist
 - User 1:N Song
 - Playlist M:N Song (through PlaylistSong)
 - Song N:1 Genre
 
-## 🚀 Deployment in Produzione
+## 👥 Developers
 
-### Ottimizzazioni
-- **Database**: Connection pooling e query optimization
-- **File Storage**: CDN per file statici
-- **Caching**: Redis per sessioni e cache
-- **Load Balancing**: Nginx reverse proxy
-- **SSL/TLS**: Certificati HTTPS
+**Marco De Negri** - Politecnico di Milano Student  
+**Alice Berta** - Politecnico di Milano Student  
 
-### Monitoraggio
-- **Logging**: SLF4J con Logback
-- **Metrics**: JMX monitoring
-- **Health Checks**: Endpoint diagnostici
-- **Error Tracking**: Centralized error logging
+Course: Web Technologies (Tecnologie Informatiche per il Web)  
+Academic Year: 2024-2025
 
-## 👥 Sviluppatori
+## 📝 Development Notes
 
-**Marco De Negri** - Studente Politecnico di Milano  
-Corso: Tecnologie Informatiche per il Web  
-Anno Accademico: 2024-2025
-
-## 📝 Note di Sviluppo
-
-- **Versione Pure HTML**: Implementata per prima seguendo paradigmi tradizionali
-- **Versione RIA**: Evoluzione moderna con JavaScript e API REST
-- **Codice Condiviso**: Beans, DAO e utility riutilizzati tra versioni
+- **Pure HTML Version**: Implemented first following traditional paradigms
+- **RIA Version**: Modern evolution with JavaScript and REST APIs
+- **Shared Code**: Beans, DAOs, and utilities reused between versions
 - **Best Practices**: Separation of concerns, clean code, documentation
 
-## 🔗 Risorse Utili
+## 📄 License
 
-- [Documentazione Servlet API](https://docs.oracle.com/javaee/7/api/javax/servlet/package-summary.html)
-- [Thymeleaf Documentation](https://www.thymeleaf.org/documentation.html)
-- [MySQL Documentation](https://dev.mysql.com/doc/)
-- [Apache Tomcat Documentation](https://tomcat.apache.org/tomcat-10.1-doc/)
-
-## 📄 Licenza
-
-Questo progetto è sviluppato per scopi educativi nell'ambito del corso "Tecnologie Informatiche per il Web" del Politecnico di Milano.
+This project is developed for educational purposes as part of the "Web Technologies" course at Politecnico di Milano.
