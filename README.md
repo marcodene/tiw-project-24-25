@@ -1,6 +1,6 @@
 # Music Playlist Manager
 
-*Web Technologies Project - Politecnico di Milano*
+*Tecnologie Informatiche per il Web - Politecnico di Milano*
 
 ## 🎵 Project Description
 
