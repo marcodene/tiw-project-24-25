@@ -1,4 +1,4 @@
-const baseURL = '/progetto-tiw-24-25-RIA2.0';
+const baseURL = '/progetto-tiw-24-25-RIA';
 
 /**
  * Makes HTTP requests to the server with support for different data types
