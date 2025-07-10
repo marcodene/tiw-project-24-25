@@ -15,6 +15,28 @@ A web application for managing personal music playlists, developed in two differ
 - **Drag & Drop Reordering**: Reorder songs in playlists (RIA version)
 - **File Management**: Upload covers and audio files with validation
 
+## 📸 Screenshots
+
+### Login & Registration
+<div align="center">
+  <img src="docs/screenshots/login.png" alt="Login Page" width="45%">
+  <img src="docs/screenshots/register.png" alt="Register Page" width="45%">
+</div>
+
+### Main Application Pages
+<div align="center">
+  <img src="docs/screenshots/home.png" alt="Home Page" width="45%">
+  <img src="docs/screenshots/playlist.png" alt="Playlist Page" width="45%">
+</div>
+
+### Player & Account
+<div align="center">
+  <img src="docs/screenshots/player.png" alt="Player Page" width="45%">
+  <img src="docs/screenshots/account.png" alt="Account Page" width="45%">
+</div>
+
+*Note: Screenshots show the Pure HTML version. The RIA version has identical functionality and styling with enhanced JavaScript interactions.*
+
 ## 🏗️ Project Architecture
 
 ### Pure HTML Version (Traditional)
