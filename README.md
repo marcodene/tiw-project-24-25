@@ -72,6 +72,8 @@ USE db_progetto2425;
 mysql -u root -p db_progetto2425 < database/schema.sql
 ```
 
+**Nota**: Il file `database/schema.sql` contiene lo schema completo compatibile con entrambe le versioni, includendo il campo `customOrder` necessario per la funzionalità di riordinamento della versione RIA.
+
 ### Configurazione Applicazione
 
 ⚠️ **IMPORTANTE**: Prima di eseguire l'applicazione, è necessario configurare i file di proprietà con le proprie credenziali e percorsi.
