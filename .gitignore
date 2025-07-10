@@ -1,0 +1,44 @@
+# Configuration files with sensitive information
+*.properties
+
+# Database credentials and connection details
+database.properties
+file_storage.properties
+
+# IDE files
+.DS_Store
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.metadata/
+.project
+.classpath
+.settings/
+
+# Build directories
+build/
+target/
+dist/
+out/
+
+# Logs
+*.log
+logs/
+
+# User-specific upload directories
+uploads/
+upload-examples/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini

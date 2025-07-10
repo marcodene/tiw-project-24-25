@@ -74,25 +74,40 @@ mysql -u root -p db_progetto2425 < database/schema.sql
 
 ### Configurazione Applicazione
 
-1. **File di Configurazione**:
-   - `database.properties`: Credenziali database
-   - `file_storage.properties`: Percorsi upload files
+⚠️ **IMPORTANTE**: Prima di eseguire l'applicazione, è necessario configurare i file di proprietà con le proprie credenziali e percorsi.
 
-2. **Esempio database.properties**:
+#### File di Configurazione Richiesti
+
+I seguenti file devono essere creati manualmente (non sono inclusi nel repository per motivi di sicurezza):
+
+**1. Database Configuration**
+- **Versione Pure HTML**: `pure-html-version/src/main/webapp/WEB-INF/database.properties`
+- **Versione RIA**: `ria-version/src/main/webapp/WEB-INF/database.properties`
+
 ```properties
-db.url=jdbc:mysql://localhost:3306/db_progetto2425
-db.user=root
-db.password=your_password
-db.driver=com.mysql.cj.jdbc.Driver
+# Database Connection Properties
+dbDriver=com.mysql.cj.jdbc.Driver
+dbUrl=jdbc:mysql://localhost:3306/db_progetto2425?serverTimezone=UTC
+dbUser=root
+dbPassword=your_database_password
 ```
 
-3. **Esempio file_storage.properties**:
+**2. File Storage Configuration**
+- **Versione Pure HTML**: `pure-html-version/src/main/webapp/WEB-INF/file_storage.properties`
+- **Versione RIA**: `ria-version/src/main/webapp/WEB-INF/file_storage.properties`
+
 ```properties
-file.storage.path=/path/to/uploads
-file.max.size=10485760
-allowed.audio.types=audio/mpeg,audio/wav
-allowed.image.types=image/jpeg,image/png
+# File Storage Paths
+baseStoragePath=/path/to/your/uploads/directory
+coverImagesDir=covers
+audioFilesDir=songs
 ```
+
+#### Nota sulla Sicurezza
+- I file `.properties` sono esclusi dal controllo versione tramite `.gitignore`
+- **NON committare mai** questi file con credenziali reali
+- Utilizzare credenziali di database dedicate per lo sviluppo
+- Assicurarsi che le directory di upload abbiano i permessi corretti
 
 ### Deployment
 
