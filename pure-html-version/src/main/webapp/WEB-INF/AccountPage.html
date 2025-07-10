@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Management</title>
+    <link rel="stylesheet" type="text/css" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <h1>Account Management</h1>
+            </div>
+            <div class="user-nav">
+                <a th:href="@{/Home}" class="back-link">Back to Home</a>
+                <a th:href="@{/Logout}" class="logout-btn">Logout</a>
+            </div>
+        </header>
+        
+        <section class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Account Information</h2>
+                </div>
+                
+                <div class="account-info">
+                    <p><strong>Username:</strong> <span th:text="${session.user.username}"></span></p>
+                    <p><strong>Name:</strong> <span th:text="${session.user.name}"></span></p>
+                    <p><strong>Surname:</strong> <span th:text="${session.user.surname}"></span></p>
+                </div>
+            </div>
+        </section>
+        
+        <section class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Delete Account</h2>
+                </div>
+                
+                <!-- FLASH MESSAGES: Mostra errore generale se presente -->
+                <div th:if="${errorMessages != null and errorMessages.containsKey('generalError')}" 
+                     class="error-message error-general">
+                    <p th:text="${errorMessages.get('generalError')}"></p>
+                </div>
+                
+                <div class="warning-box">
+                    <p><strong>Warning:</strong> This action cannot be undone. Deleting your account will permanently remove:</p>
+                    <ul>
+                        <li>All your playlists</li>
+                        <li>All your uploaded songs and album covers</li>
+                        <li>Your account information</li>
+                    </ul>
+                </div>
+                
+                <form th:action="@{/DeleteUser}" method="POST">
+                    <div class="form-group">
+                        <label for="password">Confirm your password to continue:</label>
+                        <input type="password" id="password" name="password" 
+                               th:class="${errorMessages != null and errorMessages.containsKey('passwordError') ? 'form-field-error' : ''}"
+                               required>
+                        
+                        <!-- FLASH MESSAGES: Errore specifico password -->
+                        <div th:if="${errorMessages != null and errorMessages.containsKey('passwordError')}" 
+                             class="error-message" th:text="${errorMessages.get('passwordError')}"></div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="delete-btn">Delete My Account</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+</body>
+</html>

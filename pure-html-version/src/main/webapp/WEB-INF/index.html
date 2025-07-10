@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login page</title>
+    <link rel="stylesheet" type="text/css" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-logo">
+            <h1>Music Playlist</h1>
+            <p>Log in to access your personal music collection</p>
+        </div>
+
+        <div class="login-form card">
+            <!-- AGGIUNTO: Messaggio di successo (es. dalla registrazione) -->
+            <div th:if="${successMessage != null}" class="success-message">
+                <p th:text="${successMessage}"></p>
+            </div>
+            
+            <form action="CheckLogin" method="POST">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+
+                <button type="submit" class="btn">Log In</button>
+
+                <!-- Errore di login -->
+                <p th:if="${errorMsg}" class="error-message" th:text="${errorMsg}"></p>
+            </form>
+
+            <div class="register-section">
+                <p>Don't have an account?</p>
+                <a th:href="@{/GoToRegisterPage}" class="register-button">Sign Up</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

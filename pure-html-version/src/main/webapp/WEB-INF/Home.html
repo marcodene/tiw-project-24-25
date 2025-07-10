@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Playlist - Home</title>
+    <link rel="stylesheet" type="text/css" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <h1>Music Playlist</h1>
+            </div>
+            <div class="user-nav">
+                <p th:text="${'Hello, ' + session.user.name + ' ' + session.user.surname}"></p>
+                <a th:href="@{/Account}" class="account-btn">Account</a>
+                <a th:href="@{/Logout}" class="logout-btn">Logout</a>
+            </div>
+        </header>
+        
+        <!-- Messaggio di successo -->
+        <div th:if="${successMessage != null}" class="success-message">
+            <p th:text="${successMessage}"></p>
+        </div>
+        
+        <!-- Playlists List Section -->
+        <section class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Your Playlists</h2>
+                </div>
+                
+                <div class="playlist-grid">
+                    <div class="playlist-card" th:each="playlist : ${playlists}">
+                        <div class="playlist-title">
+                            <a th:href="@{/GoToPlaylistPage(playlistId=${playlist.ID})}" th:text="${playlist.name}"></a>
+                        </div>
+                        <div class="playlist-date" th:text="${#dates.format(playlist.creationDate, 'dd-MM-yyyy')}"></div>
+                        <div th:if="${jsVersion}" class="playlist-actions">
+                            <a th:href="@{#}" th:onclick="'openReorderModal(' + ${playlist.ID} + ');'" class="btn-secondary">Reorder</a>
+                        </div>
+                    </div>
+                </div>
+                       
+                <p th:if="${#lists.isEmpty(playlists)}">You don't have any playlists yet. Create one below!</p>
+            </div>
+        </section>
+        
+        <div class="form-columns">
+            <!-- Upload Song Form Section -->
+            <section class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Upload a New Song</h2>
+                    </div>
+                    
+                    <!-- FLASH MESSAGES: Errore generale upload - CORRETTO -->
+                    <div th:if="${errorMessages != null and errorMessages.containsKey('generalError')}" 
+                         class="error-general">
+                        <p th:text="${errorMessages.get('generalError')}"></p>
+                    </div>
+                    
+                    <form th:action="@{/UploadSong}" method="POST" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="songName">Song Title</label>
+                            <input type="text" id="songName" name="songName" 
+                                   th:value="${formValues != null and formValues.containsKey('songName') ? formValues.get('songName') : ''}"
+                                   th:class="${errorMessages != null and errorMessages.containsKey('nameError') ? 'form-field-error' : ''}"
+                                   required>
+                            <div th:if="${errorMessages != null and errorMessages.containsKey('nameError')}" 
+                                 class="error-message" th:text="${errorMessages.get('nameError')}"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="albumName">Album Title</label>
+                            <input type="text" id="albumName" name="albumName"
+                                   th:value="${formValues != null and formValues.containsKey('albumName') ? formValues.get('albumName') : ''}"
+                                   th:class="${errorMessages != null and errorMessages.containsKey('albumError') ? 'form-field-error' : ''}"
+                                   required>
+                            <div th:if="${errorMessages != null and errorMessages.containsKey('albumError')}" 
+                                 class="error-message" th:text="${errorMessages.get('albumError')}"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="artistName">Artist/Group Name</label>
+                            <input type="text" id="artistName" name="artistName"
+                                   th:value="${formValues != null and formValues.containsKey('artistName') ? formValues.get('artistName') : ''}"
+                                   th:class="${errorMessages != null and errorMessages.containsKey('artistError') ? 'form-field-error' : ''}"
+                                   required>
+                            <div th:if="${errorMessages != null and errorMessages.containsKey('artistError')}" 
+                                 class="error-message" th:text="${errorMessages.get('artistError')}"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="albumReleaseYear">Release Year</label>
+                            <input type="number" id="albumReleaseYear" name="albumReleaseYear" 
+                                   th:value="${formValues != null and formValues.containsKey('albumReleaseYear') ? formValues.get('albumReleaseYear') : ''}"
+                                   th:class="${errorMessages != null and errorMessages.containsKey('yearError') ? 'form-field-error' : ''}"
+                                   min="1600" th:max="${#dates.format(#dates.createNow(), 'yyyy')}" required>
+                            <div th:if="${errorMessages != null and errorMessages.containsKey('yearError')}" 
+                                 class="error-message" th:text="${errorMessages.get('yearError')}"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="genre">Genre</label>
+                            <select id="genre" name="genre" 
+                                    th:class="${errorMessages != null and errorMessages.containsKey('genreError') ? 'form-field-error' : ''}"
+                                    required>
+                                <option value="">Select Genre</option>
+                                <option th:each="genreOption : ${genres}" 
+                                        th:value="${genreOption}" 
+                                        th:text="${genreOption}"
+                                        th:selected="${formValues != null and formValues.containsKey('genre') and formValues.get('genre') == genreOption}"></option>
+                            </select>
+                            <div th:if="${errorMessages != null and errorMessages.containsKey('genreError')}" 
+                                 class="error-message" th:text="${errorMessages.get('genreError')}"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="albumCover">Album Cover Image</label>
+                            <input type="file" id="albumCover" name="albumCover" accept="image/*"
+                                   th:class="${errorMessages != null and errorMessages.containsKey('albumCoverError') ? 'form-field-error' : ''}"
+                                   required>
+                            <div th:if="${errorMessages != null and errorMessages.containsKey('albumCoverError')}" 
+                                 class="error-message" th:text="${errorMessages.get('albumCoverError')}"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="songFile">Music File</label>
+                            <input type="file" id="songFile" name="songFile" accept="audio/*"
+                                   th:class="${errorMessages != null and errorMessages.containsKey('songFileError') ? 'form-field-error' : ''}"
+                                   required>
+                            <div th:if="${errorMessages != null and errorMessages.containsKey('songFileError')}" 
+                                 class="error-message" th:text="${errorMessages.get('songFileError')}"></div>
+                        </div>
+                        
+                        <button type="submit">Upload Song</button>
+                    </form>
+                </div>
+            </section>
+            
+            <!-- Create Playlist Form Section -->
+            <section class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Create a New Playlist</h2>
+                    </div>
+                    
+                    <!-- FLASH MESSAGES: Errore generale playlist - CORRETTO -->
+                    <div th:if="${playlistErrorMessages != null and playlistErrorMessages.containsKey('generalError')}" 
+                         class="error-general">
+                        <p th:text="${playlistErrorMessages.get('generalError')}"></p>
+                    </div>
+                    
+                    <form th:action="@{/CreatePlaylist}" method="POST">                        
+                        <div class="form-group">
+                            <label for="playlistName">Playlist Title</label>
+                            <input type="text" id="playlistName" name="playlistName" 
+                                   th:value="${playlistFormValues != null and playlistFormValues.containsKey('name') ? playlistFormValues.get('name') : ''}"
+                                   th:class="${playlistErrorMessages != null and playlistErrorMessages.containsKey('nameError') ? 'form-field-error' : ''}"
+                                   required>
+                            <div th:if="${playlistErrorMessages != null and playlistErrorMessages.containsKey('nameError')}" 
+                                 class="error-message" th:text="${playlistErrorMessages.get('nameError')}"></div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="selectedSongs">Select Songs</label>
+                            <select id="selectedSongs" name="selectedSongs" multiple required
+                                    th:class="${playlistErrorMessages != null and playlistErrorMessages.containsKey('songsError') ? 'form-field-error' : ''}">
+                                <option th:each="song : ${songs}" 
+                                        th:value="${song.ID}" 
+                                        th:text="${song.name + ' - ' + song.artistName + ' (' + song.albumName + ', ' + song.albumReleaseYear + ')'}">
+                                </option>
+                            </select>
+                            <small>Hold Ctrl (Cmd on Mac) to select multiple songs</small>
+                            <div th:if="${playlistErrorMessages != null and playlistErrorMessages.containsKey('songsError')}" 
+                                 class="error-message" th:text="${playlistErrorMessages.get('songsError')}"></div>
+                        </div>
+                        
+                        <button type="submit">Create Playlist</button>
+                    </form>
+                </div>
+            </section>
+        </div>
+    </div>
+</body>
+</html>

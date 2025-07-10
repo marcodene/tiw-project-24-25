@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 – Page not found</title>
+    <!-- Ri-utilizziamo la stessa stylesheet globale -->
+    <link rel="stylesheet" type="text/css" th:href="@{/css/style.css}">
+</head>
+<body>
+    <!-- Ri-usiamo il layout “login-container” per centrare il contenuto -->
+    <div class="login-container">
+        <div class="login-logo">
+            <h1>Music Playlist</h1>
+            <p>Oops! Pagina non trovata (errore 404)</p>
+        </div>
+
+        <div class="card" style="text-align:center">
+            <h2 style="font-size:4rem; margin-bottom:1rem;">404</h2>
+            <p>La risorsa richiesta non esiste o è stata spostata.</p>
+
+            <!-- Se l’utente è autenticato mostriamo il link alla Home, altrimenti al Login -->
+            <a th:if="${session.user != null}"  th:href="@{/Home}" class="btn" >Torna alla Home</a>
+            <a th:unless="${session.user != null}" th:href="@{/}"   class="btn" >Vai al Login</a>
+        </div>
+    </div>
+</body>
+</html>
